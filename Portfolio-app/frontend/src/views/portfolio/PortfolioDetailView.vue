@@ -4,19 +4,21 @@ import { useRoute } from 'vue-router';
 import { usePortfolioStore, useValuationStore } from '@/stores';
 import { formatCurrency, formatPercent, getChangeClass, formatQuantity } from '@/utils/format';
 import PositionTable from '@/components/portfolio/PositionTable.vue';
+import { useI18n } from 'vue-i18n';
 
 const route = useRoute();
 const portfolioStore = usePortfolioStore();
 const valuationStore = useValuationStore();
+const { t } = useI18n();
 
 const portfolioId = computed(() => route.params.id as string);
 const activeTab = ref('positions');
 
-const tabs = [
-  { id: 'positions', label: 'Positions' },
-  { id: 'performance', label: 'Performance' },
-  { id: 'transactions', label: 'Transactions' },
-];
+const tabs = computed(() => [
+  { id: 'positions', label: t('portfolio.positions') },
+  { id: 'performance', label: t('portfolio.performance') },
+  { id: 'transactions', label: t('portfolio.transactions') },
+]);
 
 const portfolio = computed(() => portfolioStore.currentPortfolio);
 const valuation = computed(() => valuationStore.getValuation(portfolioId.value));
@@ -40,7 +42,7 @@ onMounted(async () => {
   <div class="portfolio-detail">
     <div v-if="portfolioStore.loading" class="loading-state">
       <div class="spinner"></div>
-      <span>Loading portfolio...</span>
+      <span>{{ t('portfolio.loadingPortfolio') }}</span>
     </div>
 
     <template v-else-if="portfolio">
@@ -55,7 +57,7 @@ onMounted(async () => {
           </div>
         </div>
         <div class="header-actions">
-          <button class="btn btn-secondary">Edit</button>
+          <button class="btn btn-secondary">{{ t('portfolio.edit') }}</button>
         </div>
       </header>
 
@@ -63,24 +65,24 @@ onMounted(async () => {
       <section class="summary-section" v-if="valuation">
         <div class="summary-cards">
           <div class="summary-card primary">
-            <span class="label">Total Value</span>
+            <span class="label">{{ t('portfolio.totalValue') }}</span>
             <span class="value">{{ formatCurrency(valuation.totalValueBase, portfolio.baseCurrency) }}</span>
           </div>
           <div class="summary-card">
-            <span class="label">Today's P&L</span>
+            <span class="label">{{ t('dashboard.todayPnl') }}</span>
             <span class="value" :class="getChangeClass(valuation.dayPnlBase)">
               {{ formatCurrency(valuation.dayPnlBase, portfolio.baseCurrency, true) }}
             </span>
           </div>
           <div class="summary-card">
-            <span class="label">Total P&L</span>
+            <span class="label">{{ t('dashboard.totalPnl') }}</span>
             <span class="value" :class="getChangeClass(valuation.totalPnlBase)">
               {{ formatCurrency(valuation.totalPnlBase, portfolio.baseCurrency, true) }}
               <small>({{ formatPercent(returnPercent, 2, true) }})</small>
             </span>
           </div>
           <div class="summary-card">
-            <span class="label">Cash</span>
+            <span class="label">{{ t('portfolio.cash') }}</span>
             <span class="value">{{ formatCurrency(valuation.cashValueBase, portfolio.baseCurrency) }}</span>
           </div>
         </div>
@@ -89,7 +91,7 @@ onMounted(async () => {
       <!-- Tabs -->
       <div class="tabs">
         <button
-          v-for="tab in tabs"
+          v-for="tab in tabs.value"
           :key="tab.id"
           class="tab-button"
           :class="{ active: activeTab === tab.id }"
@@ -111,13 +113,13 @@ onMounted(async () => {
 
         <template v-else-if="activeTab === 'performance'">
           <div class="placeholder-content">
-            <p>Performance chart coming soon...</p>
+            <p>{{ t('portfolio.performance') }}...</p>
           </div>
         </template>
 
         <template v-else-if="activeTab === 'transactions'">
           <div class="placeholder-content">
-            <p>Transactions list coming soon...</p>
+            <p>{{ t('portfolio.transactions') }}...</p>
           </div>
         </template>
       </div>

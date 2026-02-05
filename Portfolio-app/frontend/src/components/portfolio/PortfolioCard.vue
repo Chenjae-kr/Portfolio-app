@@ -2,6 +2,7 @@
 import type { Portfolio, Valuation } from '@/types';
 import { formatCurrency, formatPercent, getChangeClass } from '@/utils/format';
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 interface Props {
   portfolio: Portfolio;
@@ -9,6 +10,7 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const { t } = useI18n();
 
 const returnPercent = computed(() => {
   if (!props.valuation) return 0;
@@ -37,20 +39,20 @@ const dayReturnPercent = computed(() => {
 
     <div v-if="valuation" class="card-body">
       <div class="total-value">
-        <span class="label">Total Value</span>
+        <span class="label">{{ t('portfolio.totalValue') }}</span>
         <span class="value">{{ formatCurrency(valuation.totalValueBase, portfolio.baseCurrency) }}</span>
       </div>
 
       <div class="metrics">
         <div class="metric">
-          <span class="metric-label">Today</span>
+          <span class="metric-label">{{ t('portfolio.today') }}</span>
           <span class="metric-value" :class="getChangeClass(valuation.dayPnlBase)">
             {{ formatCurrency(valuation.dayPnlBase, portfolio.baseCurrency, true) }}
             <small>({{ formatPercent(dayReturnPercent, 2, true) }})</small>
           </span>
         </div>
         <div class="metric">
-          <span class="metric-label">Total P&L</span>
+          <span class="metric-label">{{ t('dashboard.totalPnl') }}</span>
           <span class="metric-value" :class="getChangeClass(valuation.totalPnlBase)">
             {{ formatCurrency(valuation.totalPnlBase, portfolio.baseCurrency, true) }}
             <small>({{ formatPercent(returnPercent, 2, true) }})</small>
@@ -59,7 +61,7 @@ const dayReturnPercent = computed(() => {
       </div>
 
       <div class="positions-count">
-        {{ valuation.positions.length }} positions
+        {{ t('portfolio.positionsCount', { count: valuation.positions.length }) }}
       </div>
     </div>
 

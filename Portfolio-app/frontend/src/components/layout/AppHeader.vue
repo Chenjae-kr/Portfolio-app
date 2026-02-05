@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useAuthStore } from '@/stores';
 import { useRouter } from 'vue-router';
+import { useI18n } from 'vue-i18n';
+import LanguageSwitcher from './LanguageSwitcher.vue';
 
 const emit = defineEmits<{
   (e: 'toggle-sidebar'): void;
@@ -8,6 +10,7 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore();
 const router = useRouter();
+const { t } = useI18n();
 
 async function handleLogout() {
   authStore.logout();
@@ -28,10 +31,11 @@ async function handleLogout() {
     </div>
 
     <div class="header-right">
+      <LanguageSwitcher />
       <div class="user-menu">
         <span class="user-name">{{ authStore.user?.displayName || authStore.user?.email }}</span>
         <button class="logout-button" @click="handleLogout">
-          Logout
+          {{ t('nav.logout') }}
         </button>
       </div>
     </div>

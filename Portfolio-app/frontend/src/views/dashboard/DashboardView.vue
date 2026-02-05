@@ -4,10 +4,12 @@ import { useRouter } from 'vue-router';
 import { usePortfolioStore, useValuationStore } from '@/stores';
 import PortfolioCard from '@/components/portfolio/PortfolioCard.vue';
 import { formatCurrency, formatPercent } from '@/utils/format';
+import { useI18n } from 'vue-i18n';
 
 const router = useRouter();
 const portfolioStore = usePortfolioStore();
 const valuationStore = useValuationStore();
+const { t } = useI18n();
 
 const totalValue = computed(() => {
   return Object.values(valuationStore.valuations).reduce(
@@ -54,11 +56,11 @@ function navigateToPortfolio(id: string) {
     <section class="summary-section">
       <div class="summary-cards">
         <div class="summary-card">
-          <span class="summary-label">Total Assets</span>
+          <span class="summary-label">{{ t('dashboard.totalAssets') }}</span>
           <span class="summary-value">{{ formatCurrency(totalValue, 'KRW') }}</span>
         </div>
         <div class="summary-card">
-          <span class="summary-label">Today's P&L</span>
+          <span class="summary-label">{{ t('dashboard.todayPnl') }}</span>
           <span
             class="summary-value"
             :class="{ 'number-positive': totalDayPnl > 0, 'number-negative': totalDayPnl < 0 }"
@@ -67,7 +69,7 @@ function navigateToPortfolio(id: string) {
           </span>
         </div>
         <div class="summary-card">
-          <span class="summary-label">Total P&L</span>
+          <span class="summary-label">{{ t('dashboard.totalPnl') }}</span>
           <span
             class="summary-value"
             :class="{ 'number-positive': totalPnl > 0, 'number-negative': totalPnl < 0 }"
@@ -81,15 +83,15 @@ function navigateToPortfolio(id: string) {
     <!-- Portfolios Section -->
     <section class="portfolios-section">
       <div class="section-header">
-        <h2>Portfolios</h2>
+        <h2>{{ t('dashboard.portfolios') }}</h2>
         <RouterLink to="/portfolio/new" class="btn btn-primary">
-          + New Portfolio
+          + {{ t('dashboard.newPortfolio') }}
         </RouterLink>
       </div>
 
       <div v-if="portfolioStore.loading" class="loading-state">
         <div class="spinner"></div>
-        <span>Loading portfolios...</span>
+        <span>{{ t('dashboard.loadingPortfolios') }}</span>
       </div>
 
       <div v-else-if="portfolioStore.portfolios.length === 0" class="empty-state">
@@ -100,10 +102,10 @@ function navigateToPortfolio(id: string) {
             <line x1="12" y1="22.08" x2="12" y2="12" />
           </svg>
         </div>
-        <h3>No portfolios yet</h3>
-        <p>Create your first portfolio to start tracking your investments</p>
+        <h3>{{ t('dashboard.noPortfoliosYet') }}</h3>
+        <p>{{ t('dashboard.createFirstPortfolio') }}</p>
         <RouterLink to="/portfolio/new" class="btn btn-primary">
-          Create Portfolio
+          {{ t('dashboard.createPortfolio') }}
         </RouterLink>
       </div>
 

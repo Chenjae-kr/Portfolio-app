@@ -3,6 +3,7 @@ package com.portfolio.auth.service;
 import com.portfolio.auth.entity.User;
 import com.portfolio.auth.jwt.JwtTokenProvider;
 import com.portfolio.auth.repository.UserRepository;
+import com.portfolio.workspace.service.WorkspaceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final WorkspaceService workspaceService;
 
     @Transactional
     public Map<String, Object> register(String email, String password, String displayName) {
@@ -35,6 +37,9 @@ public class AuthService {
                 .build();
 
         user = userRepository.save(user);
+
+        // 사용자의 기본 workspace 자동 생성
+        workspaceService.createDefaultWorkspace(user.getId(), user.getEmail());
 
         // JWT 토큰 생성
         String accessToken = jwtTokenProvider.generateAccessToken(user.getEmail());

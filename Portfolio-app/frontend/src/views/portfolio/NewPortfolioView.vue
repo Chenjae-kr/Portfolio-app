@@ -1,11 +1,13 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePortfolioStore } from '@/stores';
 import type { PortfolioType } from '@/types';
+import { useI18n } from 'vue-i18n';
 
 const router = useRouter();
 const portfolioStore = usePortfolioStore();
+const { t } = useI18n();
 
 const name = ref('');
 const description = ref('');
@@ -14,11 +16,11 @@ const type = ref<PortfolioType>('REAL');
 const error = ref('');
 
 const currencies = ['KRW', 'USD', 'EUR', 'JPY'];
-const portfolioTypes: { value: PortfolioType; label: string; description: string }[] = [
-  { value: 'REAL', label: 'Real', description: 'Track actual holdings' },
-  { value: 'HYPOTHETICAL', label: 'Hypothetical', description: 'Virtual portfolio for planning' },
-  { value: 'BACKTEST_ONLY', label: 'Backtest', description: 'For backtesting strategies' },
-];
+const portfolioTypes = computed(() => [
+  { value: 'REAL' as PortfolioType, label: t('portfolio.types.real'), description: t('portfolio.types.realDesc') },
+  { value: 'HYPOTHETICAL' as PortfolioType, label: t('portfolio.types.hypothetical'), description: t('portfolio.types.hypotheticalDesc') },
+  { value: 'BACKTEST_ONLY' as PortfolioType, label: t('portfolio.types.backtest'), description: t('portfolio.types.backtestDesc') },
+]);
 
 async function handleSubmit() {
   error.value = '';
@@ -31,7 +33,7 @@ async function handleSubmit() {
     });
     router.push(`/portfolio/${portfolio.id}`);
   } catch (e: unknown) {
-    error.value = (e as Error).message || 'Failed to create portfolio';
+    error.value = (e as Error).message || t('portfolio.failedToCreate');
   }
 }
 </script>
@@ -39,8 +41,8 @@ async function handleSubmit() {
 <template>
   <div class="new-portfolio">
     <header class="page-header">
-      <h1>Create New Portfolio</h1>
-      <p>Set up a new portfolio to track your investments</p>
+      <h1>{{ t('portfolio.createNew') }}</h1>
+      <p>{{ t('portfolio.createNewSubtitle') }}</p>
     </header>
 
     <form @submit.prevent="handleSubmit" class="portfolio-form card">
@@ -49,41 +51,41 @@ async function handleSubmit() {
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="name">Portfolio Name</label>
+        <label class="form-label" for="name">{{ t('portfolio.name') }}</label>
         <input
           id="name"
           v-model="name"
           type="text"
           class="form-input"
-          placeholder="e.g., Growth Portfolio, Retirement Fund"
+          :placeholder="t('portfolio.namePlaceholder')"
           required
         />
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="description">Description (optional)</label>
+        <label class="form-label" for="description">{{ t('portfolio.descriptionLabel') }}</label>
         <textarea
           id="description"
           v-model="description"
           class="form-input"
           rows="3"
-          placeholder="Add notes about this portfolio's strategy or purpose"
+          :placeholder="t('portfolio.descriptionPlaceholder')"
         ></textarea>
       </div>
 
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label" for="currency">Base Currency</label>
+          <label class="form-label" for="currency">{{ t('portfolio.baseCurrency') }}</label>
           <select id="currency" v-model="baseCurrency" class="form-input">
             <option v-for="c in currencies" :key="c" :value="c">{{ c }}</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Portfolio Type</label>
+          <label class="form-label">{{ t('portfolio.type') }}</label>
           <div class="type-options">
             <label
-              v-for="t in portfolioTypes"
+              v-for="t in portfolioTypes.value"
               :key="t.value"
               class="type-option"
               :class="{ selected: type === t.value }"
@@ -98,11 +100,11 @@ async function handleSubmit() {
 
       <div class="form-actions">
         <button type="button" class="btn btn-secondary" @click="router.back()">
-          Cancel
+          {{ t('common.cancel') }}
         </button>
         <button type="submit" class="btn btn-primary" :disabled="portfolioStore.loading">
           <span v-if="portfolioStore.loading" class="spinner"></span>
-          <span v-else>Create Portfolio</span>
+          <span v-else>{{ t('portfolio.createButton') }}</span>
         </button>
       </div>
     </form>

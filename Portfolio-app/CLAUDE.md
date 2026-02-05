@@ -34,11 +34,14 @@ cd backend
 # Run
 ./gradlew bootRun
 
-# Run tests
+# Run tests (H2 in-memory DB 사용)
 ./gradlew test
 
 # Run single test
-./gradlew test --tests "com.portfolio.SomeTest"
+./gradlew test --tests "com.portfolio.auth.service.AuthServiceTest"
+
+# Test reports
+# - HTML: backend/build/reports/tests/test/index.html
 ```
 
 Backend runs on: http://localhost:8080/api
@@ -59,6 +62,15 @@ npm run build
 
 # Type check
 npm run type-check
+
+# Run tests
+npm test
+
+# Run tests with UI (interactive)
+npm run test:ui
+
+# Run tests with coverage
+npm run test:coverage
 ```
 
 Frontend runs on: http://localhost:5173

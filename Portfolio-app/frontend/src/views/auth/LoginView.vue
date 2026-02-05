@@ -2,10 +2,13 @@
 import { ref } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useAuthStore } from '@/stores';
+import { useI18n } from 'vue-i18n';
+import LanguageSwitcher from '@/components/layout/LanguageSwitcher.vue';
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
+const { t } = useI18n();
 
 const email = ref('');
 const password = ref('');
@@ -18,17 +21,20 @@ async function handleSubmit() {
     const redirect = route.query.redirect as string || '/dashboard';
     router.push(redirect);
   } catch (e: unknown) {
-    error.value = (e as Error).message || 'Login failed';
+    error.value = (e as Error).message || t('auth.login.loginFailed');
   }
 }
 </script>
 
 <template>
   <div class="auth-page">
+    <div class="language-switcher-container">
+      <LanguageSwitcher />
+    </div>
     <div class="auth-card">
       <div class="auth-header">
-        <h1>Welcome back</h1>
-        <p>Sign in to your account</p>
+        <h1>{{ t('auth.login.title') }}</h1>
+        <p>{{ t('auth.login.subtitle') }}</p>
       </div>
 
       <form @submit.prevent="handleSubmit" class="auth-form">
@@ -37,37 +43,37 @@ async function handleSubmit() {
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="email">Email</label>
+          <label class="form-label" for="email">{{ t('common.email') }}</label>
           <input
             id="email"
             v-model="email"
             type="email"
             class="form-input"
-            placeholder="you@example.com"
+            :placeholder="t('auth.login.emailPlaceholder')"
             required
           />
         </div>
 
         <div class="form-group">
-          <label class="form-label" for="password">Password</label>
+          <label class="form-label" for="password">{{ t('common.password') }}</label>
           <input
             id="password"
             v-model="password"
             type="password"
             class="form-input"
-            placeholder="Enter your password"
+            :placeholder="t('auth.login.passwordPlaceholder')"
             required
           />
         </div>
 
         <button type="submit" class="btn btn-primary btn-full" :disabled="authStore.loading">
           <span v-if="authStore.loading" class="spinner"></span>
-          <span v-else>Sign in</span>
+          <span v-else>{{ t('auth.login.signInButton') }}</span>
         </button>
       </form>
 
       <div class="auth-footer">
-        <p>Don't have an account? <RouterLink to="/register">Sign up</RouterLink></p>
+        <p>{{ t('auth.login.noAccount') }} <RouterLink to="/register">{{ t('auth.login.signUp') }}</RouterLink></p>
       </div>
     </div>
   </div>
@@ -81,6 +87,13 @@ async function handleSubmit() {
   justify-content: center;
   padding: 24px;
   background-color: var(--bg-primary);
+  position: relative;
+}
+
+.language-switcher-container {
+  position: absolute;
+  top: 24px;
+  right: 24px;
 }
 
 .auth-card {

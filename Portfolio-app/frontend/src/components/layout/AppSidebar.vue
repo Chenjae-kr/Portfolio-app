@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { RouterLink, useRoute } from 'vue-router';
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 
 interface Props {
   open: boolean;
@@ -12,12 +13,13 @@ defineEmits<{
 }>();
 
 const route = useRoute();
+const { t } = useI18n();
 
-const navItems = [
-  { name: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
-  { name: 'Compare', path: '/compare', icon: 'compare' },
-  { name: 'Backtest', path: '/backtest', icon: 'backtest' },
-];
+const navItems = computed(() => [
+  { name: t('nav.dashboard'), path: '/dashboard', icon: 'dashboard' },
+  { name: t('nav.compare'), path: '/compare', icon: 'compare' },
+  { name: t('nav.backtest'), path: '/backtest', icon: 'backtest' },
+]);
 
 const isActive = (path: string) => {
   return route.path === path || route.path.startsWith(path + '/');
@@ -35,7 +37,7 @@ const isActive = (path: string) => {
 
     <nav class="sidebar-nav">
       <RouterLink
-        v-for="item in navItems"
+        v-for="item in navItems.value"
         :key="item.path"
         :to="item.path"
         class="nav-item"
@@ -70,7 +72,7 @@ const isActive = (path: string) => {
     <div class="sidebar-footer">
       <RouterLink to="/portfolio/new" class="new-portfolio-btn" :class="{ collapsed: !open }">
         <span class="btn-icon">+</span>
-        <span v-if="open" class="btn-text">New Portfolio</span>
+        <span v-if="open" class="btn-text">{{ t('nav.newPortfolio') }}</span>
       </RouterLink>
     </div>
   </aside>

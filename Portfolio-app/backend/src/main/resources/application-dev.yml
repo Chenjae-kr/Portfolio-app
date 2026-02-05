@@ -1,0 +1,100 @@
+spring:
+  application:
+    name: portfolio-api
+
+  # Redis, RabbitMQ, jOOQ 자동 구성 비활성화 (개발용)
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+      - org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration
+      - org.springframework.boot.autoconfigure.cache.CacheAutoConfiguration
+      - org.springframework.boot.autoconfigure.jooq.JooqAutoConfiguration
+
+  # H2 인메모리 데이터베이스 (개발용)
+  datasource:
+    url: jdbc:h2:mem:portfolio;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # 개발용: 시작 시 스키마 재생성
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+    open-in-view: false
+
+  flyway:
+    enabled: false  # H2 개발 모드에서는 Flyway 비활성화
+
+  jackson:
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+    default-property-inclusion: non_null
+
+server:
+  port: 8080
+  servlet:
+    context-path: /api
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+
+# Application custom properties
+app:
+  jwt:
+    secret: eW91ci12ZXJ5LXNlY3VyZS1zZWNyZXQta2V5LWZvci1qd3QtdG9rZW5zLWluLWRldmVsb3BtZW50LW1vZGU=
+    access-token-expiration: 3600000  # 1 hour
+    refresh-token-expiration: 604800000  # 7 days
+
+  cache:
+    tick-ttl: 120
+    fx-ttl: 300
+    valuation-realtime-ttl: 20
+    valuation-eod-ttl: 3600
+
+  pricing:
+    poll-interval: 15000
+    retry-max-attempts: 3
+
+  backtest:
+    queue-name: backtest-jobs
+    max-concurrent-runs: 5
+
+logging:
+  level:
+    root: INFO
+    com.portfolio: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.springframework.boot.autoconfigure: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

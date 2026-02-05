@@ -1,49 +1,41 @@
-import { get } from './client';
-import type { Instrument, AssetClass } from '@/types';
+import apiClient from './client';
 
-export interface SearchInstrumentParams {
-  q: string;
-  assetClass?: AssetClass;
-  country?: string;
-  limit?: number;
+export interface Instrument {
+  id: string;
+  instrumentType: string;
+  name: string;
+  ticker: string;
+  currency: string;
+  country: string;
+  assetClass: string;
+  sector?: string;
+  industry?: string;
+  provider?: string;
+  status: string;
 }
 
-export interface PriceBar {
-  ts: string;
-  open: number;
-  high: number;
-  low: number;
-  close: number;
-  adjClose?: number;
-  volume?: number;
-}
-
-export interface PriceParams {
-  timeframe?: 'D1' | 'W1' | 'M1';
-  from?: string;
-  to?: string;
-  adjusted?: boolean;
-}
-
-export interface FxRate {
-  ts: string;
-  rate: number;
+export interface InstrumentSearchParams {
+  q?: string;
+  assetClass?: string;
+  page?: number;
+  size?: number;
 }
 
 export const instrumentApi = {
-  // Search instruments
-  search: (params: SearchInstrumentParams) =>
-    get<Instrument[]>('/v1/instruments/search', params),
+  async search(params: InstrumentSearchParams) {
+    const response = await apiClient.get('/instruments/search', { params });
+    return response.data;
+  },
 
-  // Get instrument by ID
-  getById: (id: string) =>
-    get<Instrument>(`/v1/instruments/${id}`),
+  async getById(id: string) {
+    const response = await apiClient.get(`/instruments/${id}`);
+    return response.data;
+  },
 
-  // Get price series
-  getPrices: (instrumentId: string, params?: PriceParams) =>
-    get<PriceBar[]>(`/v1/prices/${instrumentId}`, params),
-
-  // Get FX rates
-  getFxRates: (base: string, quote: string, from?: string, to?: string) =>
-    get<FxRate[]>('/v1/fx', { base, quote, from, to }),
+  async getAll(assetClass?: string) {
+    const response = await apiClient.get('/instruments', {
+      params: { assetClass },
+    });
+    return response.data;
+  },
 };

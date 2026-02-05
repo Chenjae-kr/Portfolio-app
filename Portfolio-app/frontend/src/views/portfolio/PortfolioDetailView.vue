@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router';
 import { usePortfolioStore, useValuationStore } from '@/stores';
 import { formatCurrency, formatPercent, getChangeClass, formatQuantity } from '@/utils/format';
 import PositionTable from '@/components/portfolio/PositionTable.vue';
+import TargetWeights from '@/components/portfolio/TargetWeights.vue';
 import { useI18n } from 'vue-i18n';
 
 const route = useRoute();
@@ -16,6 +17,7 @@ const activeTab = ref('positions');
 
 const tabs = computed(() => [
   { id: 'positions', label: t('portfolio.positions') },
+  { id: 'targets', label: t('portfolio.targets') },
   { id: 'performance', label: t('portfolio.performance') },
   { id: 'transactions', label: t('portfolio.transactions') },
 ]);
@@ -108,6 +110,13 @@ onMounted(async () => {
             v-if="valuation"
             :positions="valuation.positions"
             :currency="portfolio.baseCurrency"
+          />
+        </template>
+
+        <template v-else-if="activeTab === 'targets'">
+          <TargetWeights
+            :portfolio-id="portfolioId"
+            :base-currency="portfolio.baseCurrency"
           />
         </template>
 

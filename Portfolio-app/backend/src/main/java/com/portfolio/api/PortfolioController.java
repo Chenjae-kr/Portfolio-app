@@ -1,6 +1,9 @@
 package com.portfolio.api;
 
+import com.portfolio.common.exception.BusinessException;
+import com.portfolio.common.util.AssetClass;
 import com.portfolio.portfolio.entity.Portfolio;
+import com.portfolio.portfolio.entity.PortfolioTarget;
 import com.portfolio.portfolio.service.PortfolioService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +11,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -152,6 +156,86 @@ public class PortfolioController {
         return ResponseEntity.status(status).body(response);
     }
 
+    // ===== Portfolio Targets =====
+    
+    @GetMapping("/{id}/targets")
+    public ResponseEntity<?> getTargets(@PathVariable String id) {
+        try {
+            List<PortfolioTarget> targets = portfolioService.getTargets(id, DEFAULT_WORKSPACE_ID);
+            
+            List<Map<String, Object>> targetList = targets.stream()
+                    .map(this::toTargetDto)
+                    .collect(Collectors.toList());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", targetList);
+            response.put("meta", Map.of("timestamp", java.time.Instant.now().toString()));
+            response.put("error", null);
+            
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            return createErrorResponse(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return createErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    @PutMapping("/{id}/targets")
+    public ResponseEntity<?> updateTargets(
+            @PathVariable String id,
+            @RequestParam(defaultValue = "false") boolean normalize,
+            @RequestBody UpdateTargetsRequest request
+    ) {
+        try {
+            List<PortfolioTarget> targets = request.getTargets().stream()
+                    .map(dto -> {
+                        PortfolioTarget target = new PortfolioTarget();
+                        target.setInstrumentId(dto.getInstrumentId());
+                        target.setAssetClass(dto.getAssetClass() != null ? 
+                                AssetClass.valueOf(dto.getAssetClass()) : AssetClass.EQUITY);
+                        target.setCurrency(dto.getCurrency());
+                        target.setTargetWeight(dto.getTargetWeight());
+                        target.setMinWeight(dto.getMinWeight());
+                        target.setMaxWeight(dto.getMaxWeight());
+                        return target;
+                    })
+                    .collect(Collectors.toList());
+            
+            List<PortfolioTarget> savedTargets = portfolioService.updateTargets(
+                    id, DEFAULT_WORKSPACE_ID, targets, normalize);
+            
+            List<Map<String, Object>> targetList = savedTargets.stream()
+                    .map(this::toTargetDto)
+                    .collect(Collectors.toList());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", targetList);
+            response.put("meta", Map.of("timestamp", java.time.Instant.now().toString()));
+            response.put("error", null);
+            
+            return ResponseEntity.ok(response);
+        } catch (BusinessException e) {
+            return createErrorResponse(e.getMessage(), e.getErrorCode().getHttpStatus());
+        } catch (IllegalArgumentException e) {
+            return createErrorResponse(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (Exception e) {
+            return createErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+    
+    private Map<String, Object> toTargetDto(PortfolioTarget target) {
+        Map<String, Object> dto = new HashMap<>();
+        dto.put("id", target.getId());
+        dto.put("instrumentId", target.getInstrumentId());
+        dto.put("assetClass", target.getAssetClass().name());
+        dto.put("currency", target.getCurrency());
+        dto.put("targetWeight", target.getTargetWeight());
+        dto.put("minWeight", target.getMinWeight());
+        dto.put("maxWeight", target.getMaxWeight());
+        dto.put("updatedAt", target.getUpdatedAt().toString());
+        return dto;
+    }
+
     @Data
     public static class CreatePortfolioRequest {
         private String name;
@@ -164,5 +248,20 @@ public class PortfolioController {
     public static class UpdatePortfolioRequest {
         private String name;
         private String description;
+    }
+    
+    @Data
+    public static class UpdateTargetsRequest {
+        private List<TargetDto> targets;
+    }
+    
+    @Data
+    public static class TargetDto {
+        private String instrumentId;
+        private String assetClass;
+        private String currency;
+        private BigDecimal targetWeight;
+        private BigDecimal minWeight;
+        private BigDecimal maxWeight;
     }
 }

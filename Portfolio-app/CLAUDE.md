@@ -15,13 +15,21 @@ Portfolio Manager App - A multi-asset portfolio management service supporting re
 
 ## Development Commands
 
-### Infrastructure (Docker)
-```bash
-# Start PostgreSQL, Redis, RabbitMQ
-docker-compose up -d
+### Infrastructure
 
-# Stop all services
-docker-compose down
+**Option 1: Docker (Full Stack)**
+```bash
+docker-compose up -d          # Start PostgreSQL, Redis, RabbitMQ
+docker-compose down           # Stop all services
+```
+
+**Option 2: Local Development (PostgreSQL only)**
+```bash
+# macOS with Homebrew
+brew services start postgresql@14
+
+# Create database (first time only)
+createdb portfolio
 ```
 
 ### Backend
@@ -31,7 +39,10 @@ cd backend
 # Build
 ./gradlew build
 
-# Run
+# Run (local profile - uses local PostgreSQL)
+./gradlew bootRun --args='--spring.profiles.active=local'
+
+# Run with Docker infrastructure
 ./gradlew bootRun
 
 # Run tests (H2 in-memory DB 사용)
@@ -40,8 +51,7 @@ cd backend
 # Run single test
 ./gradlew test --tests "com.portfolio.auth.service.AuthServiceTest"
 
-# Test reports
-# - HTML: backend/build/reports/tests/test/index.html
+# Test reports: backend/build/reports/tests/test/index.html
 ```
 
 Backend runs on: http://localhost:8080/api
@@ -51,29 +61,13 @@ Swagger UI: http://localhost:8080/api/swagger-ui.html
 ```bash
 cd frontend
 
-# Install dependencies
-npm install
-
-# Run dev server
-npm run dev
-
-# Build for production
-npm run build
-
-# Type check
-npm run type-check
-
-# Run tests
-npm test
-
-# Run tests with UI (interactive)
-npm run test:ui
-
-# Run tests with coverage
-npm run test:coverage
+npm install         # Install dependencies
+npm run dev         # Run dev server (http://localhost:5173)
+npm run build       # Build for production
+npm test            # Run tests
+npm run test:ui     # Run tests with UI (interactive)
+npm run test:coverage  # Run tests with coverage
 ```
-
-Frontend runs on: http://localhost:5173
 
 ## Technology Stack
 
@@ -83,16 +77,21 @@ Frontend runs on: http://localhost:5173
 - Spring Security (JWT authentication)
 - Spring Data JPA + Hibernate (ORM)
 - jOOQ (aggregation/analytics queries)
-- PostgreSQL 16+ with Flyway migrations
-- Redis 7 (real-time price/FX cache)
-- RabbitMQ (async job queue for backtests)
+- PostgreSQL 16+ with Flyway migrations (H2 for tests)
+- Redis 7 (real-time price/FX cache) - optional for local dev
+- RabbitMQ (async job queue for backtests) - optional for local dev
 
 ### Frontend
 - Vue 3 + TypeScript
-- Vite
-- Pinia (state management)
-- ECharts (financial charts)
+- Vite 7+
+- Pinia 3 (state management)
+- Vue Router 4
+- Vue I18n 9 (다국어 지원: ko/en)
+- ECharts 6 / vue-echarts (financial charts)
+- VueUse (composables)
 - Axios
+- Day.js
+- Vitest (testing)
 
 ## Architecture
 
@@ -108,30 +107,64 @@ Frontend runs on: http://localhost:5173
  +-- Pricing/FX Client
 
 [ PostgreSQL ] -- ledger/timeseries/EOD data
-[ Redis ] -- real-time quotes/valuation cache
-[ RabbitMQ ] -- backtest/recompute queue
+[ Redis ] -- real-time quotes/valuation cache (optional in dev)
+[ RabbitMQ ] -- backtest/recompute queue (optional in dev)
 ```
 
-### Backend Package Structure (Monolith)
-- `api` - Controllers, DTOs, OpenAPI
-- `auth` - Security, JWT
-- `portfolio` - Portfolio, Targets, Constraints
-- `ledger` - Transaction, Legs, Posting rules
-- `pricing` - Price/FX clients, cache
-- `valuation` - Valuation engine, snapshots
-- `analytics` - Performance, Risk, Compare
-- `backtest` - Configs, Runs, Worker interface
-- `infra` - Redis, MQ, DB, Observability
+### Backend Package Structure
+```
+src/main/java/com/portfolio/
+├── api/              # REST Controllers (AuthController, PortfolioController, etc.)
+├── auth/             # Security, JWT, User entity
+│   ├── config/       # SecurityConfig
+│   ├── jwt/          # JwtTokenProvider, JwtAuthenticationFilter
+│   ├── entity/       # User
+│   ├── repository/   # UserRepository
+│   └── service/      # AuthService, CustomUserDetailsService
+├── portfolio/        # Portfolio domain
+│   ├── entity/       # Portfolio, PortfolioTarget, PortfolioGroup
+│   ├── repository/
+│   └── service/      # PortfolioService
+├── ledger/           # Transaction domain
+│   ├── entity/       # Transaction, TransactionLeg
+│   └── repository/
+├── pricing/          # Instrument, Price, FX
+│   ├── entity/       # Instrument, PriceBar, FxRate
+│   ├── repository/
+│   └── service/      # InstrumentService
+├── workspace/        # Workspace (multi-tenant)
+│   ├── entity/
+│   ├── repository/
+│   └── service/
+├── common/           # Shared utilities
+│   ├── exception/    # GlobalExceptionHandler, ErrorCode
+│   ├── response/     # ApiResponse
+│   └── util/         # AssetClass enum
+└── infra/            # Infrastructure configs
+    ├── redis/        # RedisConfig
+    └── rabbitmq/     # RabbitMQConfig
+```
 
 ### Frontend Structure
-- `api/` - API client and endpoint modules
-- `components/` - Reusable Vue components (layout, portfolio, chart)
-- `composables/` - Vue composables for shared logic
-- `router/` - Vue Router configuration
-- `stores/` - Pinia stores (auth, portfolio, valuation, backtest)
-- `types/` - TypeScript type definitions
-- `utils/` - Utility functions (format, etc.)
-- `views/` - Page components (dashboard, portfolio, compare, backtest)
+```
+src/
+├── api/           # API client modules (auth, portfolio, valuation, etc.)
+├── components/    # Reusable Vue components
+│   ├── layout/    # AppLayout, AppHeader, AppSidebar
+│   └── portfolio/ # PortfolioCard, PositionTable, TargetWeights
+├── composables/   # Vue composables for shared logic
+├── i18n/          # Internationalization setup
+├── locales/       # Translation files (ko.ts, en.ts)
+├── router/        # Vue Router configuration with auth guards
+├── stores/        # Pinia stores (auth, portfolio, valuation, backtest)
+├── types/         # TypeScript type definitions
+├── utils/         # Utility functions (format.ts)
+└── views/         # Page components
+    ├── auth/      # LoginView, RegisterView
+    ├── portfolio/ # PortfolioDetailView, NewPortfolioView
+    ├── compare/   # CompareView
+    └── backtest/  # BacktestView, BacktestResultView
+```
 
 ## Domain Model Principles
 
@@ -209,3 +242,37 @@ Total = Sum(MV_i_base) + Cash_base
 4. Basic backtesting (static + periodic rebalancing)
 5. Rebalancing tools
 6. Alerts/Insights
+
+## Testing
+
+### Backend Tests
+- Tests use H2 in-memory database (application-test.yml)
+- Redis/RabbitMQ are excluded in test profile
+- Run: `./gradlew test`
+
+### Frontend Tests
+- Vitest + Vue Test Utils + jsdom
+- Run: `npm test` or `npm run test:ui`
+
+## Environment Profiles
+
+### Backend Profiles
+- **default**: Full stack with Redis/RabbitMQ
+- **local**: Local PostgreSQL, Redis/RabbitMQ optional
+- **test**: H2 in-memory DB, no external services
+
+### Configuration Files
+```
+backend/src/main/resources/
+├── application.yml          # Default config
+├── application-local.yml    # Local dev overrides
+└── application-test.yml     # Test config (H2)
+```
+
+## Internationalization (i18n)
+
+Frontend supports Korean (ko) and English (en):
+- Default language: Korean
+- Language files: `frontend/src/locales/{ko,en}.ts`
+- Usage: `useI18n()` composable with `t('key')` function
+- Language preference saved to localStorage

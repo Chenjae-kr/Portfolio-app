@@ -15,7 +15,6 @@ import java.time.LocalDateTime;
 public class Workspace {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
     private String id;
 
     @Column(name = "owner_user_id", nullable = false)
@@ -29,6 +28,9 @@ public class Workspace {
 
     @PrePersist
     protected void onCreate() {
+        if (this.id == null) {
+            this.id = java.util.UUID.randomUUID().toString();
+        }
         createdAt = LocalDateTime.now();
     }
 }

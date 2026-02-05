@@ -2,6 +2,7 @@ package com.portfolio.api;
 
 import com.portfolio.common.exception.BusinessException;
 import com.portfolio.common.util.AssetClass;
+import com.portfolio.infra.init.DataInitializer;
 import com.portfolio.portfolio.entity.Portfolio;
 import com.portfolio.portfolio.entity.PortfolioTarget;
 import com.portfolio.portfolio.service.PortfolioService;
@@ -25,7 +26,7 @@ public class PortfolioController {
     private final PortfolioService portfolioService;
 
     // 개발 모드: 임시 workspace ID (실제로는 인증된 사용자의 workspace에서 가져와야 함)
-    private static final String DEFAULT_WORKSPACE_ID = "default-workspace";
+    private static final String DEFAULT_WORKSPACE_ID = DataInitializer.DEFAULT_WORKSPACE_ID;
 
     @GetMapping
     public ResponseEntity<?> listPortfolios() {

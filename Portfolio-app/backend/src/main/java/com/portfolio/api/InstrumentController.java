@@ -14,7 +14,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,26 +42,22 @@ public class InstrumentController {
         }
         
         Page<InstrumentDto> dtoPage = instruments.map(InstrumentDto::from);
-        
-        Map<String, Object> meta = new HashMap<>();
-        meta.put("timestamp", Instant.now().toString());
-        meta.put("totalElements", dtoPage.getTotalElements());
-        meta.put("totalPages", dtoPage.getTotalPages());
-        meta.put("currentPage", dtoPage.getNumber());
-        meta.put("size", dtoPage.getSize());
-        
-        return ResponseEntity.ok(new ApiResponse<>(dtoPage, meta, null));
+
+        Map<String, Object> additionalMeta = new HashMap<>();
+        additionalMeta.put("totalElements", dtoPage.getTotalElements());
+        additionalMeta.put("totalPages", dtoPage.getTotalPages());
+        additionalMeta.put("currentPage", dtoPage.getNumber());
+        additionalMeta.put("size", dtoPage.getSize());
+
+        return ResponseEntity.ok(ApiResponse.success(dtoPage, additionalMeta));
     }
     
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<InstrumentDto>> getById(@PathVariable String id) {
         Instrument instrument = instrumentService.getById(id);
         InstrumentDto dto = InstrumentDto.from(instrument);
-        
-        Map<String, Object> meta = new HashMap<>();
-        meta.put("timestamp", Instant.now().toString());
-        
-        return ResponseEntity.ok(new ApiResponse<>(dto, meta, null));
+
+        return ResponseEntity.ok(ApiResponse.success(dto));
     }
     
     @GetMapping
@@ -80,12 +75,10 @@ public class InstrumentController {
         List<InstrumentDto> dtos = instruments.stream()
                 .map(InstrumentDto::from)
                 .toList();
-        
-        Map<String, Object> meta = new HashMap<>();
-        meta.put("timestamp", Instant.now().toString());
-        meta.put("count", dtos.size());
-        
-        return ResponseEntity.ok(new ApiResponse<>(dtos, meta, null));
+
+        Map<String, Object> additionalMeta = Map.of("count", dtos.size());
+
+        return ResponseEntity.ok(ApiResponse.success(dtos, additionalMeta));
     }
     
     @Data

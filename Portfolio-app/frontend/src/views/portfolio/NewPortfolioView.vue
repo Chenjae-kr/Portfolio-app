@@ -85,14 +85,14 @@ async function handleSubmit() {
           <label class="form-label">{{ t('portfolio.type') }}</label>
           <div class="type-options">
             <label
-              v-for="t in portfolioTypes.value"
-              :key="t.value"
+              v-for="pt in portfolioTypes"
+              :key="pt.value"
               class="type-option"
-              :class="{ selected: type === t.value }"
+              :class="{ selected: type === pt.value }"
             >
-              <input type="radio" v-model="type" :value="t.value" class="sr-only" />
-              <span class="type-label">{{ t.label }}</span>
-              <span class="type-description">{{ t.description }}</span>
+              <input type="radio" v-model="type" :value="pt.value" class="sr-only" />
+              <span class="type-label">{{ pt.label }}</span>
+              <span class="type-description">{{ pt.description }}</span>
             </label>
           </div>
         </div>

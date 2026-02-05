@@ -177,7 +177,7 @@ onMounted(async () => {
       <!-- Tabs -->
       <div class="tabs">
         <button
-          v-for="tab in tabs.value"
+          v-for="tab in tabs"
           :key="tab.id"
           class="tab-button"
           :class="{ active: activeTab === tab.id }"

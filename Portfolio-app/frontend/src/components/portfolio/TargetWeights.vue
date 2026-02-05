@@ -37,7 +37,7 @@ async function fetchTargets() {
   error.value = null;
   try {
     const response = await portfolioApi.getTargets(props.portfolioId);
-    targets.value = response.data || [];
+    targets.value = response || [];
   } catch (err: any) {
     error.value = err.message || 'Failed to load targets';
   } finally {

@@ -37,7 +37,7 @@ const isActive = (path: string) => {
 
     <nav class="sidebar-nav">
       <RouterLink
-        v-for="item in navItems.value"
+        v-for="item in navItems"
         :key="item.path"
         :to="item.path"
         class="nav-item"

@@ -93,6 +93,9 @@ export default {
     descriptionPlaceholder: '이 포트폴리오의 전략이나 목적에 대한 메모를 추가하세요',
     createButton: '포트폴리오 생성',
     failedToCreate: '포트폴리오 생성 실패',
+    editPortfolio: '포트폴리오 편집',
+    nameRequired: '포트폴리오 이름을 입력하세요',
+    failedToUpdate: '포트폴리오 수정 실패',
     types: {
       real: '실제',
       realDesc: '실제 보유 자산 추적',

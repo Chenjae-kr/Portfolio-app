@@ -2,7 +2,7 @@
 import { onMounted, computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { usePortfolioStore, useValuationStore } from '@/stores';
-import { formatCurrency, formatPercent, getChangeClass, formatQuantity } from '@/utils/format';
+import { formatCurrency, formatPercent, getChangeClass } from '@/utils/format';
 import PositionTable from '@/components/portfolio/PositionTable.vue';
 import TargetWeights from '@/components/portfolio/TargetWeights.vue';
 import { useI18n } from 'vue-i18n';
@@ -32,6 +32,47 @@ const returnPercent = computed(() => {
   return costBasis > 0 ? totalPnlBase / costBasis : 0;
 });
 
+// Edit modal state
+const showEditModal = ref(false);
+const editForm = ref({
+  name: '',
+  description: '',
+});
+const editError = ref('');
+
+function openEditModal() {
+  if (portfolio.value) {
+    editForm.value = {
+      name: portfolio.value.name,
+      description: portfolio.value.description || '',
+    };
+    editError.value = '';
+    showEditModal.value = true;
+  }
+}
+
+function closeEditModal() {
+  showEditModal.value = false;
+  editError.value = '';
+}
+
+async function saveEdit() {
+  if (!editForm.value.name.trim()) {
+    editError.value = t('portfolio.nameRequired');
+    return;
+  }
+
+  try {
+    await portfolioStore.updatePortfolio(portfolioId.value, {
+      name: editForm.value.name,
+      description: editForm.value.description || undefined,
+    });
+    closeEditModal();
+  } catch (e: unknown) {
+    editError.value = (e as Error).message || t('portfolio.failedToUpdate');
+  }
+}
+
 onMounted(async () => {
   await Promise.all([
     portfolioStore.fetchPortfolio(portfolioId.value),
@@ -59,9 +100,52 @@ onMounted(async () => {
           </div>
         </div>
         <div class="header-actions">
-          <button class="btn btn-secondary">{{ t('portfolio.edit') }}</button>
+          <button class="btn btn-secondary" @click="openEditModal">{{ t('portfolio.edit') }}</button>
         </div>
       </header>
+
+      <!-- Edit Modal -->
+      <div v-if="showEditModal" class="modal-overlay" @click.self="closeEditModal">
+        <div class="modal">
+          <div class="modal-header">
+            <h2>{{ t('portfolio.editPortfolio') }}</h2>
+            <button class="modal-close" @click="closeEditModal">&times;</button>
+          </div>
+          <form @submit.prevent="saveEdit" class="modal-body">
+            <div v-if="editError" class="error-message">{{ editError }}</div>
+
+            <div class="form-group">
+              <label class="form-label" for="edit-name">{{ t('portfolio.name') }}</label>
+              <input
+                id="edit-name"
+                v-model="editForm.name"
+                type="text"
+                class="form-input"
+                required
+              />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="edit-description">{{ t('portfolio.descriptionLabel') }}</label>
+              <textarea
+                id="edit-description"
+                v-model="editForm.description"
+                class="form-input"
+                rows="3"
+              ></textarea>
+            </div>
+
+            <div class="modal-actions">
+              <button type="button" class="btn btn-secondary" @click="closeEditModal">
+                {{ t('common.cancel') }}
+              </button>
+              <button type="submit" class="btn btn-primary" :disabled="portfolioStore.loading">
+                {{ t('common.save') }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
 
       <!-- Summary Cards -->
       <section class="summary-section" v-if="valuation">
@@ -268,5 +352,78 @@ onMounted(async () => {
   padding: 40px;
   text-align: center;
   color: var(--text-secondary);
+}
+
+/* Modal styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal {
+  background-color: var(--bg-primary);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--text-secondary);
+  padding: 0;
+  line-height: 1;
+}
+
+.modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.error-message {
+  padding: 12px;
+  background-color: var(--danger-light);
+  color: var(--danger-color);
+  border-radius: var(--radius-md);
+  font-size: 14px;
 }
 </style>

@@ -93,6 +93,9 @@ export default {
     descriptionPlaceholder: "Add notes about this portfolio's strategy or purpose",
     createButton: 'Create Portfolio',
     failedToCreate: 'Failed to create portfolio',
+    editPortfolio: 'Edit Portfolio',
+    nameRequired: 'Portfolio name is required',
+    failedToUpdate: 'Failed to update portfolio',
     types: {
       real: 'Real',
       realDesc: 'Track actual holdings',

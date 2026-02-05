@@ -314,6 +314,103 @@ describe('PortfolioService', () => {
 
 ---
 
+### D. `API.md` 업데이트 (API 변경 시 필수)
+
+**API 추가 시:**
+
+```markdown
+## 📝 거래 API (Transactions)
+
+### 거래 생성
+
+**POST** `/v1/portfolios/{id}/transactions`
+
+포트폴리오에 새로운 거래를 생성합니다.
+
+**Request Body:**
+```json
+{
+  "occurredAt": "2026-02-06T10:30:00Z",
+  "type": "BUY",
+  "legs": [
+    {
+      "legType": "ASSET",
+      "instrumentId": "inst-aapl",
+      "quantity": 10,
+      "price": 150.00,
+      "amount": 1500.00
+    },
+    {
+      "legType": "CASH",
+      "currency": "USD",
+      "amount": -1500.00
+    }
+  ]
+}
+```
+
+**Response:** `201 Created`
+```json
+{
+  "data": {
+    "id": "txn-uuid",
+    "type": "BUY",
+    "status": "POSTED",
+    "occurredAt": "2026-02-06T10:30:00Z"
+  }
+}
+```
+```
+
+**업데이트 내용:**
+- [ ] 새로운 엔드포인트 추가
+- [ ] Request/Response 예제
+- [ ] 에러 코드 (필요시)
+- [ ] 사용 예제 (curl)
+
+---
+
+### E. `DATABASE.md` 업데이트 (DB 변경 시 필수)
+
+**테이블 추가 시:**
+
+```markdown
+### 11. dividend_schedules (배당 일정)
+
+**목적:** 배당 지급 일정 추적
+
+```sql
+CREATE TABLE dividend_schedules (
+    id VARCHAR(36) PRIMARY KEY,
+    instrument_id VARCHAR(36) NOT NULL REFERENCES instruments(id),
+    ex_date DATE NOT NULL,
+    pay_date DATE NOT NULL,
+    amount_per_share DECIMAL(18, 6) NOT NULL,
+    currency CHAR(3) NOT NULL,
+    status VARCHAR(20) DEFAULT 'SCHEDULED'
+);
+
+CREATE INDEX idx_dividend_schedules_instrument ON dividend_schedules(instrument_id, ex_date);
+```
+
+**주요 필드:**
+- `ex_date` - 배당락일
+- `pay_date` - 배당 지급일
+- `amount_per_share` - 주당 배당금
+
+**특징:**
+- 배당 캘린더 기능용
+- 자동 배당 거래 생성에 활용
+```
+
+**업데이트 내용:**
+- [ ] ERD 다이어그램 업데이트 (Mermaid)
+- [ ] 테이블 상세 설명 추가
+- [ ] 인덱스 추가 (필요시)
+- [ ] Flyway 마이그레이션 작성
+
+---
+
 #### 5️⃣ 커밋 및 푸시
 
 **Git 작업 순서:**
@@ -354,9 +451,10 @@ git push origin main
 | 상황 | 업데이트 문서 | 필수 여부 |
 |------|--------------|----------|
 | 기능 개발 완료 | `PROGRESS.md` + `NEXT_STEPS.md` | ✅ 필수 |
+| API 추가/변경 | `PROGRESS.md` + `API.md` | ✅ 필수 |
+| DB 스키마 변경 | `DATABASE.md` + Flyway 마이그레이션 | ✅ 필수 |
 | 버그 수정 | `PROGRESS.md` (알려진 이슈) | 🟡 권장 |
 | 테스트 추가 | `PROGRESS.md` (테스트 수) | ✅ 필수 |
-| API 추가 | `PROGRESS.md` (엔드포인트) | ✅ 필수 |
 | 릴리스 | `CHANGELOG.md` | ✅ 필수 |
 | 아키텍처 변경 | `docs/02_TECH_STACK.md` | ✅ 필수 |
 
@@ -601,6 +699,8 @@ Portfolio-app/
 │   ├── README.md                      # 문서 인덱스
 │   ├── 01_PROJECT_OVERVIEW.md         # 프로젝트 개요
 │   ├── 02_TECH_STACK.md               # 기술 스택
+│   ├── API.md                         # ⭐ API 레퍼런스 (API 변경 시)
+│   ├── DATABASE.md                    # ⭐ DB 설계 (스키마 변경 시)
 │   ├── PROGRESS.md                    # ⭐ 개발 진척도 (자주 업데이트)
 │   ├── NEXT_STEPS.md                  # ⭐ 다음 단계 (자주 업데이트)
 │   ├── DEVELOPMENT_WORKFLOW.md        # ⭐ 이 문서 (워크플로우 규칙)
@@ -614,11 +714,13 @@ Portfolio-app/
 |------|--------------|----------------|
 | `PROGRESS.md` | 높음 (매 기능 완료) | 기능 개발, 테스트 추가 |
 | `NEXT_STEPS.md` | 높음 (매 기능 완료) | Sprint 진행, 우선순위 변경 |
+| `API.md` | 중간 (API 변경 시) | 엔드포인트 추가/수정, 응답 구조 변경 |
+| `DATABASE.md` | 중간 (스키마 변경 시) | 테이블 추가/수정, 인덱스 변경 |
 | `DEVELOPMENT_WORKFLOW.md` | 낮음 | 개발 프로세스 변경 |
 | `CHANGELOG.md` | 중간 (릴리스 시) | 버전 릴리스 |
 | `01_PROJECT_OVERVIEW.md` | 낮음 | 프로젝트 방향 변경 |
 | `02_TECH_STACK.md` | 낮음 | 기술 스택 변경 |
-| `CLAUDE.md` | 낮음 | API 설계 변경 |
+| `CLAUDE.md` | 낮음 | API 설계 원칙 변경 |
 
 ---
 
@@ -743,6 +845,14 @@ Portfolio-app/
   - [ ] 다음 우선순위 정렬
   - [ ] 알려진 이슈
   - [ ] 릴리스 계획
+- [ ] `docs/API.md` 업데이트 (API 변경 시)
+  - [ ] 새 엔드포인트 추가
+  - [ ] Request/Response 예제
+  - [ ] 에러 코드 업데이트
+- [ ] `docs/DATABASE.md` 업데이트 (스키마 변경 시)
+  - [ ] ERD 다이어그램 수정
+  - [ ] 테이블 설명 추가
+  - [ ] 인덱스 전략 업데이트
 
 **Git:**
 - [ ] 기능 커밋 (feat:)

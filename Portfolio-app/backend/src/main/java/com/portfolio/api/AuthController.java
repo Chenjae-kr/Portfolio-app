@@ -1,6 +1,9 @@
 package com.portfolio.api;
 
+import com.portfolio.auth.service.AuthService;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -9,58 +12,65 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/v1/auth")
+@RequiredArgsConstructor
 public class AuthController {
+
+    private final AuthService authService;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        // 개발 모드: 간단한 mock 응답
-        Map<String, Object> tokens = new HashMap<>();
-        tokens.put("accessToken", "mock-access-token-" + System.currentTimeMillis());
-        tokens.put("refreshToken", "mock-refresh-token-" + System.currentTimeMillis());
-        
-        Map<String, Object> user = new HashMap<>();
-        user.put("id", "test-user");
-        user.put("email", request.getEmail());
-        user.put("displayName", "Test User");
-        user.put("locale", "ko");
-        
-        Map<String, Object> loginData = new HashMap<>();
-        loginData.put("tokens", tokens);
-        loginData.put("user", user);
-        
-        // API 응답 래퍼
-        Map<String, Object> response = new HashMap<>();
-        response.put("data", loginData);
-        response.put("meta", Map.of("timestamp", java.time.Instant.now().toString()));
-        response.put("error", null);
-        
-        return ResponseEntity.ok(response);
+        try {
+            Map<String, Object> loginData = authService.login(request.getEmail(), request.getPassword());
+            
+            // API 응답 래퍼
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", loginData);
+            response.put("meta", Map.of("timestamp", java.time.Instant.now().toString()));
+            response.put("error", null);
+            
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("code", "AUTH_FAILED");
+            error.put("message", e.getMessage());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", null);
+            response.put("meta", Map.of("timestamp", java.time.Instant.now().toString()));
+            response.put("error", error);
+            
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+        }
     }
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
-        // 개발 모드: 간단한 mock 응답
-        Map<String, Object> tokens = new HashMap<>();
-        tokens.put("accessToken", "mock-access-token-" + System.currentTimeMillis());
-        tokens.put("refreshToken", "mock-refresh-token-" + System.currentTimeMillis());
-        
-        Map<String, Object> user = new HashMap<>();
-        user.put("id", "new-user-" + System.currentTimeMillis());
-        user.put("email", request.getEmail());
-        user.put("displayName", request.getDisplayName());
-        user.put("locale", "ko");
-        
-        Map<String, Object> registerData = new HashMap<>();
-        registerData.put("tokens", tokens);
-        registerData.put("user", user);
-        
-        // API 응답 래퍼
-        Map<String, Object> response = new HashMap<>();
-        response.put("data", registerData);
-        response.put("meta", Map.of("timestamp", java.time.Instant.now().toString()));
-        response.put("error", null);
-        
-        return ResponseEntity.ok(response);
+        try {
+            Map<String, Object> registerData = authService.register(
+                request.getEmail(),
+                request.getPassword(),
+                request.getDisplayName()
+            );
+            
+            // API 응답 래퍼
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", registerData);
+            response.put("meta", Map.of("timestamp", java.time.Instant.now().toString()));
+            response.put("error", null);
+            
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("code", "REGISTRATION_FAILED");
+            error.put("message", e.getMessage());
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("data", null);
+            response.put("meta", Map.of("timestamp", java.time.Instant.now().toString()));
+            response.put("error", error);
+            
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        }
     }
 
     @PostMapping("/refresh")

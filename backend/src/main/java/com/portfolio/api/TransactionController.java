@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -27,8 +28,11 @@ public class TransactionController {
     private static final String DEFAULT_WORKSPACE_ID = DataInitializer.DEFAULT_WORKSPACE_ID;
 
     /**
-     * 거래 목록 조회
+     * 거래 목록 조회 (필터: fromDate, toDate, type)
      * GET /v1/portfolios/{portfolioId}/transactions
+     * @param fromDate 선택 - 시작일 (YYYY-MM-DD)
+     * @param toDate 선택 - 종료일 (YYYY-MM-DD)
+     * @param type 선택 - 거래 유형 (BUY, SELL, DEPOSIT, WITHDRAW, DIVIDEND 등)
      */
     @GetMapping("/v1/portfolios/{portfolioId}/transactions")
     public ResponseEntity<?> listTransactions(

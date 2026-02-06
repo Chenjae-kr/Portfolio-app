@@ -169,8 +169,18 @@ public class BacktestService {
                 prices.put(t.getInstrumentId(), price);
             }
 
-            // 첫 거래일: 초기 배분
+            // 첫 거래일: 초기 배분 + DCA인 경우 첫 입금
             if (firstDay) {
+                if (isDCA && config.getDcaAmount() != null
+                        && config.getDcaAmount().compareTo(BigDecimal.ZERO) > 0) {
+                    cash = cash.add(config.getDcaAmount());
+                    totalInvested = totalInvested.add(config.getDcaAmount());
+                    TradeLog depositLog = new TradeLog();
+                    depositLog.setTs(current.toString());
+                    depositLog.setAction("DEPOSIT");
+                    depositLog.setAmount(config.getDcaAmount().setScale(2, RoundingMode.HALF_UP));
+                    tradeLogs.add(depositLog);
+                }
                 if (cash.compareTo(BigDecimal.ZERO) > 0) {
                     cash = executeTrades(targetAllocs, positions, cash, prices, tradeLogs, current);
                 }

@@ -360,8 +360,12 @@ const statsTable = computed(() => {
 
 .compare-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 400px 1fr;
   gap: 24px;
+}
+
+.selection-panel.card {
+  min-width: 0; /* 그리드 셀 안에서 카드가 넘치지 않도록 */
 }
 
 .selection-panel h3 {
@@ -453,6 +457,7 @@ const statsTable = computed(() => {
 
 .date-inputs span {
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .btn-full {

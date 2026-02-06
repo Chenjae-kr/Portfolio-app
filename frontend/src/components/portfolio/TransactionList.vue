@@ -186,7 +186,7 @@ defineExpose({ refresh: fetchTransactions });
           <td class="date-cell">{{ dayjs(tx.occurredAt).format('YYYY-MM-DD') }}</td>
           <td>
             <span class="type-badge" :style="{ color: typeColors[tx.type] || '#64748b' }">
-              {{ typeLabels[tx.type] || tx.type }}
+              {{ getTypeLabel(tx.type) }}
             </span>
           </td>
           <td>
@@ -261,6 +261,61 @@ defineExpose({ refresh: fetchTransactions });
 .list-header h3 {
   margin: 0;
   font-size: 1.1rem;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-secondary, #f8fafc);
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-group label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #64748b);
+}
+
+.filter-input,
+.filter-select {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  font-size: 14px;
+  min-width: 120px;
+}
+
+.filter-select {
+  min-width: 100px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-secondary, #64748b);
+}
+
+.btn-outline:hover {
+  background: var(--bg-hover, rgba(0,0,0,0.04));
 }
 
 .tx-table {

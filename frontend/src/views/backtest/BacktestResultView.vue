@@ -51,6 +51,14 @@ const totalReturnPercent = computed(() => {
   return (finalValue - invested) / invested;
 });
 
+/** 적립식 투자(DCA) 여부: 투자 원금이 시계열 동안 증가했으면 DCA */
+const isDCA = computed(() => {
+  const series = result.value?.series;
+  if (!series || series.length < 2) return false;
+  const invested = series.map((p: any) => p.totalInvested ?? 0);
+  return invested.some((v: number, i: number) => i > 0 && v !== invested[0]);
+});
+
 const equityChartOption = computed(() => {
   if (!result.value?.series?.length) return null;
 
@@ -238,6 +246,11 @@ const drawdownChartOption = computed(() => {
     </div>
 
     <template v-else-if="result">
+      <!-- 적립식 투자 표시 -->
+      <div v-if="isDCA" class="dca-badge">
+        {{ t('backtest.dca') }} ({{ t('backtest.totalInvestedLine') }})
+      </div>
+
       <!-- Summary Cards -->
       <section class="summary-section">
         <div class="summary-cards">
@@ -312,7 +325,7 @@ const drawdownChartOption = computed(() => {
                 <th>{{ t('backtest.action') }}</th>
                 <th class="text-right">{{ t('transaction.quantity') }}</th>
                 <th class="text-right">{{ t('transaction.price') }}</th>
-                <th class="text-right">{{ t('transaction.fee') }}</th>
+                <th class="text-right">{{ t('transaction.fee') }} / {{ t('transaction.amount') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -384,6 +397,20 @@ const drawdownChartOption = computed(() => {
   padding: 60px 24px;
   gap: 16px;
   color: var(--text-secondary);
+}
+
+.dca-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  color: #92400e;
 }
 
 .summary-section {

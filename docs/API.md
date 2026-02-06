@@ -932,7 +932,7 @@ GET /v1/instruments/search?q=Vanguard&assetClass=EQUITY&page=0&size=10
 ### Transaction (거래) ✅
 
 - `POST /v1/portfolios/{id}/transactions` - 거래 생성
-- `GET /v1/portfolios/{id}/transactions` - 거래 내역 조회
+- `GET /v1/portfolios/{id}/transactions` - 거래 내역 조회 (Query: fromDate, toDate, type)
 - `GET /v1/transactions/{id}` - 거래 상세 조회
 - `POST /v1/transactions/{id}/void` - 거래 취소
 

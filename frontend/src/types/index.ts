@@ -192,9 +192,31 @@ export interface PerformanceStats {
   trackingError?: number;
 }
 
+export interface CompareCurvePoint {
+  date: string;
+  value: number;
+}
+
+export interface CompareCurve {
+  id: string;
+  label: string;
+  metric: string;
+  points: CompareCurvePoint[];
+}
+
+export interface CompareStatRow {
+  id: string;
+  label: string;
+  totalReturn?: number;
+  cagr?: number;
+  vol?: number;
+  mdd?: number;
+  sharpe?: number;
+}
+
 export interface CompareResponse {
-  curves: PerformanceSeries[];
-  statsTable: PerformanceStats[];
+  curves: CompareCurve[];
+  statsTable: CompareStatRow[];
 }
 
 // Backtest Types

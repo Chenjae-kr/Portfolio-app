@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { transactionApi } from '@/api';
-import type { Transaction } from '@/types';
+import type { Transaction, TransactionType } from '@/types';
 import { formatCurrency } from '@/utils/format';
 import { useI18n } from 'vue-i18n';
 import dayjs from 'dayjs';
@@ -19,23 +19,17 @@ const { t } = useI18n();
 const transactions = ref<Transaction[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
-const page = ref(0);
-const totalPages = ref(0);
 
-const typeLabels: Record<string, string> = {
-  BUY: '매수',
-  SELL: '매도',
-  DEPOSIT: '입금',
-  WITHDRAW: '출금',
-  DIVIDEND: '배당',
-  INTEREST: '이자',
-  FEE: '수수료',
-  TAX: '세금',
-  FX_CONVERT: '환전',
-  SPLIT: '액면분할',
-  MERGER: '합병',
-  TRANSFER: '이체',
-};
+// 필터 상태
+const filterFromDate = ref<string>('');
+const filterToDate = ref<string>('');
+const filterType = ref<TransactionType | ''>('');
+
+const TX_TYPES = ['BUY', 'SELL', 'DEPOSIT', 'WITHDRAW', 'DIVIDEND', 'INTEREST', 'FEE', 'TAX', 'FX_CONVERT', 'SPLIT', 'MERGER', 'TRANSFER'] as const;
+
+function getTypeLabel(type: string) {
+  return t(`transaction.types.${type}`) || type;
+}
 
 const typeColors: Record<string, string> = {
   BUY: '#2563eb',
@@ -71,15 +65,28 @@ async function fetchTransactions() {
   loading.value = true;
   error.value = null;
   try {
-    transactions.value = await transactionApi.list(props.portfolioId, {
-      page: page.value,
-      size: 20,
-    });
+    const params: { fromDate?: string; toDate?: string; type?: TransactionType } = {};
+    if (filterFromDate.value) params.fromDate = filterFromDate.value;
+    if (filterToDate.value) params.toDate = filterToDate.value;
+    if (filterType.value) params.type = filterType.value as TransactionType;
+
+    transactions.value = await transactionApi.list(props.portfolioId, params);
   } catch (e: unknown) {
     error.value = (e as Error).message || 'Failed to load transactions';
   } finally {
     loading.value = false;
   }
+}
+
+function applyFilter() {
+  fetchTransactions();
+}
+
+function resetFilter() {
+  filterFromDate.value = '';
+  filterToDate.value = '';
+  filterType.value = '';
+  fetchTransactions();
 }
 
 async function handleVoid(txId: string) {
@@ -104,6 +111,28 @@ defineExpose({ refresh: fetchTransactions });
       <button class="btn btn-primary btn-sm" @click="$emit('add')">
         + {{ t('transaction.addTransaction') }}
       </button>
+    </div>
+
+    <div class="filter-bar">
+      <div class="filter-group">
+        <label>{{ t('transaction.filterFromDate') }}</label>
+        <input v-model="filterFromDate" type="date" class="filter-input" />
+      </div>
+      <div class="filter-group">
+        <label>{{ t('transaction.filterToDate') }}</label>
+        <input v-model="filterToDate" type="date" class="filter-input" />
+      </div>
+      <div class="filter-group">
+        <label>{{ t('transaction.filterType') }}</label>
+        <select v-model="filterType" class="filter-select">
+          <option value="">{{ t('transaction.filterAllTypes') }}</option>
+          <option v-for="txType in TX_TYPES" :key="txType" :value="txType">{{ getTypeLabel(txType) }}</option>
+        </select>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-secondary btn-sm" @click="applyFilter">{{ t('transaction.filterApply') }}</button>
+        <button class="btn btn-outline btn-sm" @click="resetFilter">{{ t('transaction.filterReset') }}</button>
+      </div>
     </div>
 
     <div v-if="loading" class="loading-state">
@@ -140,7 +169,7 @@ defineExpose({ refresh: fetchTransactions });
           <td class="date-cell">{{ dayjs(tx.occurredAt).format('YYYY-MM-DD') }}</td>
           <td>
             <span class="type-badge" :style="{ color: typeColors[tx.type] || '#64748b' }">
-              {{ typeLabels[tx.type] || tx.type }}
+              {{ getTypeLabel(tx.type) }}
             </span>
           </td>
           <td>
@@ -200,6 +229,61 @@ defineExpose({ refresh: fetchTransactions });
 .list-header h3 {
   margin: 0;
   font-size: 1.1rem;
+}
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: var(--bg-secondary, #f8fafc);
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-group label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary, #64748b);
+}
+
+.filter-input,
+.filter-select {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  font-size: 14px;
+  min-width: 120px;
+}
+
+.filter-select {
+  min-width: 100px;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 8px;
+}
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--text-secondary, #64748b);
+}
+
+.btn-outline:hover {
+  background: var(--bg-hover, rgba(0,0,0,0.04));
 }
 
 .tx-table {

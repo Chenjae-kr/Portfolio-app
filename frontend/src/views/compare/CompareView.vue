@@ -360,8 +360,12 @@ const statsTable = computed(() => {
 
 .compare-layout {
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 400px 1fr;
   gap: 24px;
+}
+
+.selection-panel.card {
+  min-width: 0; /* 그리드 셀 안에서 카드가 넘치지 않도록 */
 }
 
 .selection-panel h3 {
@@ -442,14 +446,18 @@ const statsTable = computed(() => {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0; /* 플렉스 자식이 카드 밖으로 넘치지 않도록 */
 }
 
 .date-inputs input {
-  flex: 1;
+  flex: 1 1 0%;
+  min-width: 140px; /* 날짜가 완전히 보이도록 최소 너비 보장 */
+  box-sizing: border-box;
 }
 
 .date-inputs span {
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 .btn-full {

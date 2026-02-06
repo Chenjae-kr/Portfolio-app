@@ -4,24 +4,25 @@ import type { Transaction, TransactionLeg, TransactionType } from '@/types';
 export interface CreateTransactionRequest {
   occurredAt: string;
   type: TransactionType;
-  settleDate?: string;
   note?: string;
-  tags?: string[];
   legs: Omit<TransactionLeg, 'id'>[];
 }
 
 export interface TransactionListParams {
-  from?: string;
-  to?: string;
-  type?: TransactionType;
-  limit?: number;
-  cursor?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface TransactionListResponse {
+  items: Transaction[];
+  totalElements: number;
+  totalPages: number;
 }
 
 export const transactionApi = {
   // List transactions for portfolio
   list: (portfolioId: string, params?: TransactionListParams) =>
-    get<Transaction[]>(`/v1/portfolios/${portfolioId}/transactions`, params),
+    get<Transaction[]>(`/v1/portfolios/${portfolioId}/transactions`, params as Record<string, unknown>),
 
   // Get transaction by ID
   getById: (id: string) =>

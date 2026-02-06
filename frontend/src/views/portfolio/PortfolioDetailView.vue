@@ -5,6 +5,8 @@ import { usePortfolioStore, useValuationStore } from '@/stores';
 import { formatCurrency, formatPercent, getChangeClass } from '@/utils/format';
 import PositionTable from '@/components/portfolio/PositionTable.vue';
 import TargetWeights from '@/components/portfolio/TargetWeights.vue';
+import TransactionList from '@/components/portfolio/TransactionList.vue';
+import TransactionForm from '@/components/portfolio/TransactionForm.vue';
 import { useI18n } from 'vue-i18n';
 
 const route = useRoute();
@@ -14,6 +16,17 @@ const { t } = useI18n();
 
 const portfolioId = computed(() => route.params.id as string);
 const activeTab = ref('positions');
+const showTransactionForm = ref(false);
+const transactionListRef = ref<InstanceType<typeof TransactionList> | null>(null);
+
+function onTransactionSaved() {
+  showTransactionForm.value = false;
+  transactionListRef.value?.refresh();
+}
+
+function onAddTransaction() {
+  showTransactionForm.value = true;
+}
 
 const tabs = computed(() => [
   { id: 'positions', label: t('portfolio.positions') },
@@ -211,9 +224,20 @@ onMounted(async () => {
         </template>
 
         <template v-else-if="activeTab === 'transactions'">
-          <div class="placeholder-content">
-            <p>{{ t('portfolio.transactions') }}...</p>
-          </div>
+          <TransactionForm
+            v-if="showTransactionForm"
+            :portfolio-id="portfolioId"
+            :base-currency="portfolio.baseCurrency"
+            @saved="onTransactionSaved"
+            @cancel="showTransactionForm = false"
+          />
+          <TransactionList
+            v-else
+            ref="transactionListRef"
+            :portfolio-id="portfolioId"
+            :base-currency="portfolio.baseCurrency"
+            @add="onAddTransaction"
+          />
         </template>
       </div>
     </template>

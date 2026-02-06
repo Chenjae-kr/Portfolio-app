@@ -24,6 +24,14 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
             Pageable pageable
     );
 
+    @Query("SELECT DISTINCT t FROM Transaction t LEFT JOIN FETCH t.legs " +
+            "WHERE t.portfolioId = :portfolioId AND t.status <> :status " +
+            "ORDER BY t.occurredAt DESC")
+    List<Transaction> findByPortfolioIdWithLegs(
+            @Param("portfolioId") String portfolioId,
+            @Param("status") Transaction.TransactionStatus status
+    );
+
     @Query("SELECT t FROM Transaction t WHERE t.portfolioId = :portfolioId " +
             "AND t.status = 'POSTED' " +
             "AND t.occurredAt BETWEEN :from AND :to " +

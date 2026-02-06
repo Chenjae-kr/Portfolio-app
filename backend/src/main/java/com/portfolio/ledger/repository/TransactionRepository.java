@@ -32,6 +32,36 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
             @Param("status") Transaction.TransactionStatus status
     );
 
+    /**
+     * 거래 목록 조회 (날짜 필터만, from/to는 sentinel로 null 대신 사용)
+     */
+    @Query("SELECT DISTINCT t FROM Transaction t LEFT JOIN FETCH t.legs " +
+            "WHERE t.portfolioId = :portfolioId AND t.status <> :excludeStatus " +
+            "AND t.occurredAt >= :fromDate AND t.occurredAt <= :toDate " +
+            "ORDER BY t.occurredAt DESC")
+    List<Transaction> findByPortfolioIdWithDateFilters(
+            @Param("portfolioId") String portfolioId,
+            @Param("excludeStatus") Transaction.TransactionStatus excludeStatus,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate
+    );
+
+    /**
+     * 거래 목록 조회 (날짜 + 유형 필터, from/to는 sentinel로 null 대신 사용)
+     */
+    @Query("SELECT DISTINCT t FROM Transaction t LEFT JOIN FETCH t.legs " +
+            "WHERE t.portfolioId = :portfolioId AND t.status <> :excludeStatus " +
+            "AND t.occurredAt >= :fromDate AND t.occurredAt <= :toDate " +
+            "AND t.type = :type " +
+            "ORDER BY t.occurredAt DESC")
+    List<Transaction> findByPortfolioIdWithDateFiltersAndType(
+            @Param("portfolioId") String portfolioId,
+            @Param("excludeStatus") Transaction.TransactionStatus excludeStatus,
+            @Param("fromDate") LocalDateTime fromDate,
+            @Param("toDate") LocalDateTime toDate,
+            @Param("type") Transaction.TransactionType type
+    );
+
     @Query("SELECT t FROM Transaction t WHERE t.portfolioId = :portfolioId " +
             "AND t.status = 'POSTED' " +
             "AND t.occurredAt BETWEEN :from AND :to " +

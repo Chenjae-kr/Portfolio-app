@@ -11,6 +11,9 @@ export interface CreateTransactionRequest {
 export interface TransactionListParams {
   page?: number;
   size?: number;
+  fromDate?: string;  // YYYY-MM-DD
+  toDate?: string;    // YYYY-MM-DD
+  type?: TransactionType;
 }
 
 export interface TransactionListResponse {

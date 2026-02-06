@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
@@ -27,14 +28,32 @@ public class TransactionController {
     private static final String DEFAULT_WORKSPACE_ID = DataInitializer.DEFAULT_WORKSPACE_ID;
 
     /**
-     * 거래 목록 조회
+     * 거래 목록 조회 (필터: fromDate, toDate, type)
      * GET /v1/portfolios/{portfolioId}/transactions
+     * @param fromDate 선택 - 시작일 (YYYY-MM-DD)
+     * @param toDate 선택 - 종료일 (YYYY-MM-DD)
+     * @param type 선택 - 거래 유형 (BUY, SELL, DEPOSIT, WITHDRAW, DIVIDEND 등)
      */
     @GetMapping("/v1/portfolios/{portfolioId}/transactions")
-    public ResponseEntity<?> listTransactions(@PathVariable String portfolioId) {
+    public ResponseEntity<?> listTransactions(
+            @PathVariable String portfolioId,
+            @RequestParam(required = false) String fromDate,
+            @RequestParam(required = false) String toDate,
+            @RequestParam(required = false) String type) {
         try {
+            LocalDate from = fromDate != null && !fromDate.isBlank()
+                    ? LocalDate.parse(fromDate) : null;
+            LocalDate to = toDate != null && !toDate.isBlank()
+                    ? LocalDate.parse(toDate) : null;
+            Transaction.TransactionType typeEnum = null;
+            if (type != null && !type.isBlank()) {
+                try {
+                    typeEnum = Transaction.TransactionType.valueOf(type);
+                } catch (IllegalArgumentException ignored) { /* invalid type ignored */ }
+            }
+
             List<Transaction> transactions = transactionService.getTransactions(
-                    portfolioId, DEFAULT_WORKSPACE_ID);
+                    portfolioId, DEFAULT_WORKSPACE_ID, from, to, typeEnum);
 
             List<Map<String, Object>> items = transactions.stream()
                     .map(this::toTransactionDto)

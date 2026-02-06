@@ -197,13 +197,10 @@ async function runBacktest() {
             <input v-model="endDate" type="date" class="form-input" />
           </div>
         </div>
-      </section>
 
-      <!-- Step 2: Investment Strategy -->
-      <section class="form-section">
-        <h3>{{ t('backtest.investmentStrategy') }}</h3>
-
-        <div class="form-row">
+        <!-- 투자 방식: 일시불 / 적립식 (기본 설정 카드 안, 종료일 아래) -->
+        <h4 class="sub-section-title">{{ t('backtest.investmentStrategy') }}</h4>
+        <div class="form-row investment-type-row">
           <div class="form-group">
             <label class="form-label">{{ t('backtest.investmentTypeLabel') }}</label>
             <div class="radio-group">
@@ -219,10 +216,17 @@ async function runBacktest() {
           </div>
         </div>
 
+        <!-- 적립 금액·적립 주기 (적립식 선택 시에만 표시) -->
         <div v-if="investmentType === 'DCA'" class="form-row">
           <div class="form-group">
             <label class="form-label">{{ t('backtest.dcaAmount') }}</label>
-            <input v-model.number="dcaAmount" type="number" class="form-input" min="0" />
+            <input
+              v-model.number="dcaAmount"
+              type="number"
+              class="form-input"
+              min="0"
+              :placeholder="t('backtest.dcaAmount')"
+            />
           </div>
           <div class="form-group">
             <label class="form-label">{{ t('backtest.dcaFrequencyLabel') }}</label>
@@ -239,6 +243,7 @@ async function runBacktest() {
         </p>
       </section>
 
+      <!-- Step 2 라벨: 투자 방식 (기존 Step 2 내용은 Step 1로 통합됨) -->
       <!-- Step 3: Asset Allocation -->
       <section class="form-section">
         <h3>{{ t('backtest.assetAllocation') }}</h3>
@@ -378,10 +383,25 @@ async function runBacktest() {
   margin-bottom: 8px;
 }
 
+.sub-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin: 24px 0 12px;
+  padding-bottom: 4px;
+}
+
 .section-hint {
   font-size: 13px;
   color: var(--text-muted);
   margin-bottom: 16px;
+}
+
+.field-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
 }
 
 .form-row {

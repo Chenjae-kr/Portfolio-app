@@ -190,6 +190,7 @@ export interface PerformanceStats {
   sharpe?: number;
   beta?: number;
   trackingError?: number;
+  totalInvested?: number;
 }
 
 export interface CompareCurvePoint {
@@ -224,6 +225,8 @@ export type RebalanceType = 'NONE' | 'PERIODIC' | 'BAND';
 export type RebalancePeriod = 'MONTHLY' | 'QUARTERLY' | 'SEMI_ANNUAL' | 'ANNUAL';
 export type PriceMode = 'ADJ_CLOSE' | 'CLOSE';
 export type BacktestStatus = 'RUNNING' | 'SUCCEEDED' | 'FAILED';
+export type InvestmentType = 'LUMP_SUM' | 'DCA';
+export type DcaFrequency = 'MONTHLY' | 'QUARTERLY' | 'SEMI_ANNUAL' | 'ANNUAL';
 
 export interface BacktestConfig {
   id?: string;
@@ -237,6 +240,9 @@ export interface BacktestConfig {
   dividendReinvest: boolean;
   priceMode: PriceMode;
   feeModel?: Record<string, unknown>;
+  investmentType?: InvestmentType;
+  dcaAmount?: number;
+  dcaFrequency?: DcaFrequency;
   targets: PortfolioTarget[];
 }
 
@@ -254,6 +260,7 @@ export interface BacktestResultPoint {
   equityCurveBase: number;
   drawdown: number;
   cashBase: number;
+  totalInvested?: number;
 }
 
 export interface BacktestTradeLog {
@@ -263,6 +270,7 @@ export interface BacktestTradeLog {
   quantity: number;
   price: number;
   fee: number;
+  amount?: number;
 }
 
 export interface BacktestResult {

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useBacktestStore } from '@/stores';
-import type { RebalanceType, RebalancePeriod, PriceMode, AssetClass } from '@/types';
+import type { RebalanceType, RebalancePeriod, PriceMode, AssetClass, InvestmentType, DcaFrequency } from '@/types';
 import { useI18n } from 'vue-i18n';
 
 const router = useRouter();
@@ -19,6 +19,9 @@ const rebalancePeriod = ref<RebalancePeriod>('QUARTERLY');
 const bandThreshold = ref(0.05);
 const dividendReinvest = ref(true);
 const priceMode = ref<PriceMode>('ADJ_CLOSE');
+const investmentType = ref<InvestmentType>('LUMP_SUM');
+const dcaAmount = ref(1000000);
+const dcaFrequency = ref<DcaFrequency>('MONTHLY');
 
 interface TargetRow {
   id: string;
@@ -56,6 +59,19 @@ const rebalancePeriods: { value: RebalancePeriod; label: string }[] = [
   { value: 'SEMI_ANNUAL', label: 'Semi-Annual' },
   { value: 'ANNUAL', label: 'Annual' },
 ];
+
+const dcaFrequencies: { value: DcaFrequency; label: string }[] = [
+  { value: 'MONTHLY', label: t('backtest.frequencyMonthly') },
+  { value: 'QUARTERLY', label: t('backtest.frequencyQuarterly') },
+  { value: 'SEMI_ANNUAL', label: t('backtest.frequencySemiAnnual') },
+  { value: 'ANNUAL', label: t('backtest.frequencyAnnual') },
+];
+
+const initialCapitalLabel = computed(() =>
+  investmentType.value === 'DCA'
+    ? t('backtest.initialCapitalDCA')
+    : t('backtest.initialCapital')
+);
 
 // 종목 프리셋
 const presets = [
@@ -113,6 +129,9 @@ async function runBacktest() {
         bandThreshold: rebalanceType.value === 'BAND' ? bandThreshold.value : undefined,
         dividendReinvest: dividendReinvest.value,
         priceMode: priceMode.value,
+        investmentType: investmentType.value,
+        dcaAmount: investmentType.value === 'DCA' ? dcaAmount.value : undefined,
+        dcaFrequency: investmentType.value === 'DCA' ? dcaFrequency.value : undefined,
         targets: targets.value.map(t => ({
           instrumentId: t.instrumentId,
           assetClass: t.assetClass,
@@ -163,8 +182,8 @@ async function runBacktest() {
             <input v-model="name" type="text" class="form-input" />
           </div>
           <div class="form-group">
-            <label class="form-label">{{ t('backtest.initialCapital') }}</label>
-            <input v-model.number="initialCapital" type="number" class="form-input" />
+            <label class="form-label">{{ initialCapitalLabel }}</label>
+            <input v-model.number="initialCapital" type="number" class="form-input" min="0" />
           </div>
         </div>
 
@@ -180,7 +199,47 @@ async function runBacktest() {
         </div>
       </section>
 
-      <!-- Step 2: Asset Allocation -->
+      <!-- Step 2: Investment Strategy -->
+      <section class="form-section">
+        <h3>{{ t('backtest.investmentStrategy') }}</h3>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">{{ t('backtest.investmentTypeLabel') }}</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" v-model="investmentType" value="LUMP_SUM" />
+                <span>{{ t('backtest.lumpSum') }}</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" v-model="investmentType" value="DCA" />
+                <span>{{ t('backtest.dca') }}</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="investmentType === 'DCA'" class="form-row">
+          <div class="form-group">
+            <label class="form-label">{{ t('backtest.dcaAmount') }}</label>
+            <input v-model.number="dcaAmount" type="number" class="form-input" min="0" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">{{ t('backtest.dcaFrequencyLabel') }}</label>
+            <select v-model="dcaFrequency" class="form-input">
+              <option v-for="f in dcaFrequencies" :key="f.value" :value="f.value">
+                {{ f.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <p v-if="investmentType === 'DCA'" class="section-hint">
+          {{ t('backtest.dcaHint') }}
+        </p>
+      </section>
+
+      <!-- Step 3: Asset Allocation -->
       <section class="form-section">
         <h3>{{ t('backtest.assetAllocation') }}</h3>
         <p class="section-hint">{{ t('backtest.allocationHint') }}</p>
@@ -222,7 +281,7 @@ async function runBacktest() {
         </div>
       </section>
 
-      <!-- Step 3: Rebalancing -->
+      <!-- Step 4: Rebalancing -->
       <section class="form-section">
         <h3>{{ t('backtest.rebalancing') }}</h3>
 
@@ -394,6 +453,22 @@ async function runBacktest() {
 
 .weight-total.invalid {
   color: var(--danger-color);
+}
+
+.radio-group {
+  display: flex;
+  gap: 24px;
+}
+
+.radio-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.radio-label input {
+  accent-color: var(--primary-color);
 }
 
 .checkbox-label {

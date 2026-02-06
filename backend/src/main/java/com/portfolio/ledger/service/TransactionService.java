@@ -68,12 +68,29 @@ public class TransactionService {
      */
     @Transactional(readOnly = true)
     public List<Transaction> getTransactions(String portfolioId, String workspaceId) {
+        return getTransactions(portfolioId, workspaceId, null, null, null);
+    }
+
+    /**
+     * 거래 목록 조회 (필터)
+     */
+    @Transactional(readOnly = true)
+    public List<Transaction> getTransactions(String portfolioId,
+                                             String workspaceId,
+                                             Transaction.TransactionType type,
+                                             LocalDateTime from,
+                                             LocalDateTime to) {
         // 포트폴리오 접근 권한 확인
         portfolioRepository.findByIdAndWorkspaceId(portfolioId, workspaceId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND));
 
-        return transactionRepository.findByPortfolioIdWithLegs(
-                portfolioId, Transaction.TransactionStatus.VOID);
+        return transactionRepository.findByPortfolioIdWithLegsAndFilters(
+                portfolioId,
+                Transaction.TransactionStatus.VOID,
+                type,
+                from,
+                to
+        );
     }
 
     /**

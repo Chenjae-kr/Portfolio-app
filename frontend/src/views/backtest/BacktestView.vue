@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue';
+import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useBacktestStore } from '@/stores';
 import type { RebalanceType, RebalancePeriod, PriceMode, AssetClass, InvestmentType, DcaFrequency } from '@/types';

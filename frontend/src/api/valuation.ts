@@ -7,6 +7,7 @@ import type {
   MetricType,
   FrequencyType,
   CompareResponse,
+  RebalanceAnalysis,
 } from '@/types';
 
 export interface PerformanceParams {
@@ -41,4 +42,8 @@ export const valuationApi = {
   // Compare portfolios
   compare: (request: CompareRequest) =>
     post<CompareResponse>('/v1/compare/performance', request),
+
+  // Rebalance analysis
+  getRebalance: (portfolioId: string) =>
+    get<RebalanceAnalysis>(`/v1/portfolios/${portfolioId}/rebalance`),
 };

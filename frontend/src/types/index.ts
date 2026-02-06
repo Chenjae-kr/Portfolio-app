@@ -271,3 +271,35 @@ export interface BacktestResult {
   stats: PerformanceStats;
   tradeLogs: BacktestTradeLog[];
 }
+
+// Rebalance Types
+export interface WeightComparison {
+  instrumentId: string;
+  instrumentName: string;
+  currentWeight: number;
+  targetWeight: number;
+  difference: number;
+  currentValue: number;
+  targetValue: number;
+  diffValue: number;
+}
+
+export interface TradeRecommendation {
+  instrumentId: string;
+  instrumentName: string;
+  action: 'BUY' | 'SELL';
+  amount: number;
+  estimatedFee: number;
+}
+
+export interface RebalanceAnalysis {
+  portfolioId: string;
+  totalValue: number;
+  cashBalance: number;
+  cashWeight: number;
+  comparisons: WeightComparison[];
+  trades: TradeRecommendation[];
+  totalEstimatedFee: number;
+  needsRebalancing: boolean;
+  maxDrift: number;
+}

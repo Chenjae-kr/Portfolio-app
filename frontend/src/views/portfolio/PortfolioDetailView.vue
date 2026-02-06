@@ -8,6 +8,7 @@ import TargetWeights from '@/components/portfolio/TargetWeights.vue';
 import TransactionList from '@/components/portfolio/TransactionList.vue';
 import TransactionForm from '@/components/portfolio/TransactionForm.vue';
 import PerformanceChart from '@/components/portfolio/PerformanceChart.vue';
+import RebalancePanel from '@/components/portfolio/RebalancePanel.vue';
 import { useI18n } from 'vue-i18n';
 
 const route = useRoute();
@@ -34,6 +35,7 @@ function onAddTransaction() {
 const tabs = computed(() => [
   { id: 'positions', label: t('portfolio.positions') },
   { id: 'targets', label: t('portfolio.targets') },
+  { id: 'rebalance', label: t('portfolio.rebalance') },
   { id: 'performance', label: t('portfolio.performance') },
   { id: 'transactions', label: t('portfolio.transactions') },
 ]);
@@ -215,6 +217,13 @@ onMounted(async () => {
 
         <template v-else-if="activeTab === 'targets'">
           <TargetWeights
+            :portfolio-id="portfolioId"
+            :base-currency="portfolio.baseCurrency"
+          />
+        </template>
+
+        <template v-else-if="activeTab === 'rebalance'">
+          <RebalancePanel
             :portfolio-id="portfolioId"
             :base-currency="portfolio.baseCurrency"
           />

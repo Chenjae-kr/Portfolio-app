@@ -1,12 +1,9 @@
-feat: Transaction Ledger (거래 원장) 구현
+feat: Rebalancing Tools (리밸런싱 도구) 구현
 
-Backend:
-- TransactionService: 거래 생성/조회/취소, 복식부기 검증
-- TransactionController: REST API 엔드포인트 4개
-- TransactionRepository: legs fetch 쿼리 추가
-
-Frontend:
-- TransactionList: 거래 내역 테이블 컴포넌트
-- TransactionForm: 거래 입력 폼 (매수/매도/입금/출금/배당)
-- PortfolioDetailView: Transactions 탭 연동
-- 다국어 번역 추가 (ko/en)
+- RebalanceService: 현재 vs 목표 비중 비교, 편차 계산, 매매 추천
+- RebalanceController: GET /v1/portfolios/{id}/rebalance API
+- RebalancePanel.vue: ECharts 도넛 차트 (현재/목표 배분) + 매매 추천 테이블
+- PortfolioDetailView에 Rebalance 탭 추가
+- i18n 번역 (한국어/영어 20+ 키)
+- TypeScript RebalanceAnalysis 타입 정의
+- docs 업데이트 (진척률 75% -> 82%)

@@ -7,6 +7,7 @@ import PositionTable from '@/components/portfolio/PositionTable.vue';
 import TargetWeights from '@/components/portfolio/TargetWeights.vue';
 import TransactionList from '@/components/portfolio/TransactionList.vue';
 import TransactionForm from '@/components/portfolio/TransactionForm.vue';
+import PerformanceChart from '@/components/portfolio/PerformanceChart.vue';
 import { useI18n } from 'vue-i18n';
 
 const route = useRoute();
@@ -220,9 +221,10 @@ onMounted(async () => {
         </template>
 
         <template v-else-if="activeTab === 'performance'">
-          <div class="placeholder-content">
-            <p>{{ t('portfolio.performance') }}...</p>
-          </div>
+          <PerformanceChart
+            :portfolio-id="portfolioId"
+            :base-currency="portfolio.baseCurrency"
+          />
         </template>
 
         <template v-else-if="activeTab === 'transactions'">

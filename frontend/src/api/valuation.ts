@@ -2,6 +2,7 @@ import { get, post } from './client';
 import type {
   Valuation,
   ValuationMode,
+  PerformanceData,
   PerformanceSeries,
   MetricType,
   FrequencyType,
@@ -29,7 +30,11 @@ export const valuationApi = {
   getValuation: (portfolioId: string, mode: ValuationMode = 'REALTIME', asOf?: string) =>
     get<Valuation>(`/v1/portfolios/${portfolioId}/valuation`, { mode, as_of: asOf }),
 
-  // Get performance series
+  // Get performance data (TWR, risk metrics)
+  getPerformanceData: (portfolioId: string, params: PerformanceParams) =>
+    get<PerformanceData>(`/v1/portfolios/${portfolioId}/performance`, params),
+
+  // Get performance series (legacy)
   getPerformance: (portfolioId: string, params: PerformanceParams) =>
     get<PerformanceSeries>(`/v1/portfolios/${portfolioId}/performance`, params),
 

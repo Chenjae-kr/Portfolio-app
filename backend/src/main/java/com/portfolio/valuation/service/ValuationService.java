@@ -9,6 +9,7 @@ import com.portfolio.portfolio.entity.Portfolio;
 import com.portfolio.portfolio.repository.PortfolioRepository;
 import com.portfolio.pricing.entity.Instrument;
 import com.portfolio.pricing.repository.InstrumentRepository;
+import com.portfolio.pricing.service.PriceService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -28,6 +30,7 @@ public class ValuationService {
     private final TransactionRepository transactionRepository;
     private final PortfolioRepository portfolioRepository;
     private final InstrumentRepository instrumentRepository;
+    private final PriceService priceService;
 
     /**
      * 포트폴리오 평가 계산
@@ -74,7 +77,7 @@ public class ValuationService {
             // 수량이 0이면 스킵 (전량 매도)
             if (acc.quantity.compareTo(BigDecimal.ZERO) == 0) continue;
 
-            BigDecimal currentPrice = getMockPrice(instrumentId);
+            BigDecimal currentPrice = priceService.getCurrentPrice(instrumentId);
             BigDecimal marketValue = acc.quantity.multiply(currentPrice);
             BigDecimal costBasis = acc.quantity.multiply(acc.getAvgCost());
             BigDecimal unrealizedPnl = marketValue.subtract(costBasis);
@@ -135,41 +138,74 @@ public class ValuationService {
     }
 
     /**
-     * Mock 가격 반환 (개발용)
-     * 실제 서비스에서는 Redis 캐시 → DB → 외부 API 순으로 조회
+     * 특정 날짜 기준 포트폴리오 가치 계산 (성과 분석용)
+     * 해당 날짜까지의 거래를 기반으로 포지션을 계산하고, 해당 날짜의 종가로 평가
      */
-    private BigDecimal getMockPrice(String instrumentId) {
-        // 한국 주식 (숫자 코드)
-        Map<String, BigDecimal> mockPrices = Map.ofEntries(
-                Map.entry("005930", new BigDecimal("78000")),   // 삼성전자
-                Map.entry("000660", new BigDecimal("195000")),  // SK하이닉스
-                Map.entry("035420", new BigDecimal("210000")),  // NAVER
-                Map.entry("035720", new BigDecimal("62000")),   // 카카오
-                Map.entry("051910", new BigDecimal("650000")),  // LG화학
-                Map.entry("006400", new BigDecimal("53000")),   // 삼성SDI
-                Map.entry("068270", new BigDecimal("350000")),  // 셀트리온
-                // 미국 주식
-                Map.entry("AAPL", new BigDecimal("245.00")),
-                Map.entry("MSFT", new BigDecimal("415.00")),
-                Map.entry("GOOGL", new BigDecimal("180.00")),
-                Map.entry("AMZN", new BigDecimal("225.00")),
-                Map.entry("TSLA", new BigDecimal("390.00")),
-                Map.entry("NVDA", new BigDecimal("135.00")),
-                // ETF
-                Map.entry("VOO", new BigDecimal("520.00")),
-                Map.entry("QQQ", new BigDecimal("530.00")),
-                Map.entry("SPY", new BigDecimal("565.00")),
-                Map.entry("VTI", new BigDecimal("290.00")),
-                // 채권 ETF
-                Map.entry("TLT", new BigDecimal("92.00")),
-                Map.entry("BND", new BigDecimal("72.00"))
-        );
+    @Transactional(readOnly = true)
+    public BigDecimal calculateValueAtDate(String portfolioId, LocalDate date) {
+        List<Transaction> transactions = transactionRepository.findByPortfolioIdWithLegs(
+                portfolioId, Transaction.TransactionStatus.VOID);
 
-        BigDecimal price = mockPrices.get(instrumentId);
-        if (price != null) return price;
+        LocalDateTime endOfDay = date.atTime(23, 59, 59);
 
-        // 알 수 없는 종목은 마지막 거래가 기준 (100으로 대체)
-        return new BigDecimal("100.00");
+        Map<String, PositionAccumulator> positionMap = new LinkedHashMap<>();
+        BigDecimal cashBalance = BigDecimal.ZERO;
+
+        for (Transaction tx : transactions) {
+            // 해당 날짜까지의 거래만 포함
+            if (tx.getOccurredAt() != null && tx.getOccurredAt().isAfter(endOfDay)) continue;
+
+            for (TransactionLeg leg : tx.getLegs()) {
+                if (leg.getLegType() == TransactionLeg.LegType.ASSET && leg.getInstrumentId() != null) {
+                    positionMap.computeIfAbsent(leg.getInstrumentId(), k -> new PositionAccumulator())
+                            .addTrade(leg.getQuantity(), leg.getPrice(), leg.getAmount());
+                } else if (leg.getLegType() == TransactionLeg.LegType.CASH) {
+                    if (!"EXTERNAL".equals(leg.getAccount())) {
+                        cashBalance = cashBalance.add(leg.getAmount());
+                    }
+                }
+            }
+        }
+
+        BigDecimal totalAssetValue = BigDecimal.ZERO;
+        for (Map.Entry<String, PositionAccumulator> entry : positionMap.entrySet()) {
+            PositionAccumulator acc = entry.getValue();
+            if (acc.quantity.compareTo(BigDecimal.ZERO) <= 0) continue;
+
+            BigDecimal price = priceService.getHistoricalPrice(entry.getKey(), date)
+                    .orElse(priceService.getCurrentPrice(entry.getKey()));
+            totalAssetValue = totalAssetValue.add(acc.quantity.multiply(price));
+        }
+
+        return totalAssetValue.add(cashBalance);
+    }
+
+    /**
+     * 특정 날짜의 현금흐름 계산 (입금/출금 합계, TWR 계산용)
+     */
+    @Transactional(readOnly = true)
+    public BigDecimal getCashFlowAtDate(String portfolioId, LocalDate date) {
+        List<Transaction> transactions = transactionRepository.findByPortfolioIdWithLegs(
+                portfolioId, Transaction.TransactionStatus.VOID);
+
+        BigDecimal cashFlow = BigDecimal.ZERO;
+        for (Transaction tx : transactions) {
+            if (tx.getOccurredAt() == null) continue;
+            LocalDate txDate = tx.getOccurredAt().toLocalDate();
+            if (!txDate.equals(date)) continue;
+
+            // DEPOSIT, WITHDRAW 거래의 EXTERNAL 계정 금액이 외부 현금흐름
+            if (tx.getType() == Transaction.TransactionType.DEPOSIT
+                    || tx.getType() == Transaction.TransactionType.WITHDRAW) {
+                for (TransactionLeg leg : tx.getLegs()) {
+                    if (leg.getLegType() == TransactionLeg.LegType.CASH
+                            && !"EXTERNAL".equals(leg.getAccount())) {
+                        cashFlow = cashFlow.add(leg.getAmount());
+                    }
+                }
+            }
+        }
+        return cashFlow;
     }
 
     // ===== Inner classes =====

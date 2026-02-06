@@ -1,18 +1,18 @@
 package com.portfolio.api;
 
+import com.portfolio.analytics.service.PerformanceService;
+import com.portfolio.analytics.service.PerformanceService.PerformanceResult;
 import com.portfolio.common.exception.BusinessException;
 import com.portfolio.infra.init.DataInitializer;
 import com.portfolio.portfolio.service.PortfolioService;
 import com.portfolio.valuation.service.ValuationService;
 import com.portfolio.valuation.service.ValuationService.PortfolioValuation;
 import com.portfolio.valuation.service.ValuationService.PositionValuation;
-import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
@@ -25,6 +25,7 @@ public class ValuationController {
 
     private final PortfolioService portfolioService;
     private final ValuationService valuationService;
+    private final PerformanceService performanceService;
 
     private static final String DEFAULT_WORKSPACE_ID = DataInitializer.DEFAULT_WORKSPACE_ID;
 
@@ -68,7 +69,7 @@ public class ValuationController {
     }
 
     /**
-     * 포트폴리오 성과 조회 (아직 미구현 - 빈 데이터 반환)
+     * 포트폴리오 성과 조회
      * GET /v1/portfolios/{id}/performance
      */
     @GetMapping("/{id}/performance")
@@ -79,15 +80,19 @@ public class ValuationController {
             @RequestParam(defaultValue = "TWR") String metric,
             @RequestParam(defaultValue = "DAILY") String frequency) {
         try {
-            portfolioService.findById(id, DEFAULT_WORKSPACE_ID);
+            PerformanceResult result = performanceService.calculatePerformance(
+                    id, DEFAULT_WORKSPACE_ID,
+                    LocalDate.parse(from), LocalDate.parse(to),
+                    metric, frequency);
 
             Map<String, Object> data = new LinkedHashMap<>();
-            data.put("portfolioId", id);
-            data.put("from", from);
-            data.put("to", to);
-            data.put("metric", metric);
-            data.put("frequency", frequency);
-            data.put("dataPoints", Collections.emptyList());
+            data.put("portfolioId", result.portfolioId);
+            data.put("from", result.from);
+            data.put("to", result.to);
+            data.put("metric", result.metric);
+            data.put("frequency", result.frequency);
+            data.put("dataPoints", result.dataPoints);
+            data.put("stats", result.stats);
 
             Map<String, Object> response = new HashMap<>();
             response.put("data", data);

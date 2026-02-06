@@ -145,6 +145,29 @@ export interface Valuation {
 export type MetricType = 'TWR' | 'MWR' | 'SIMPLE';
 export type FrequencyType = 'DAILY' | 'WEEKLY' | 'MONTHLY';
 
+export interface PerformanceDataPoint {
+  date: string;
+  value: number;
+}
+
+export interface RiskMetrics {
+  totalReturn: number;
+  cagr: number;
+  volatility: number;
+  mdd: number;
+  sharpe: number;
+}
+
+export interface PerformanceData {
+  portfolioId: string;
+  from: string;
+  to: string;
+  metric: string;
+  frequency: string;
+  dataPoints: PerformanceDataPoint[];
+  stats: RiskMetrics;
+}
+
 export interface PerformancePoint {
   ts: string;
   value: number;

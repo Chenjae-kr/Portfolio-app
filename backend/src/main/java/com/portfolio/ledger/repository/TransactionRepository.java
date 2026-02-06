@@ -32,6 +32,21 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
             @Param("status") Transaction.TransactionStatus status
     );
 
+    @Query("SELECT DISTINCT t FROM Transaction t LEFT JOIN FETCH t.legs " +
+            "WHERE t.portfolioId = :portfolioId " +
+            "AND t.status <> :status " +
+            "AND (:type IS NULL OR t.type = :type) " +
+            "AND (:from IS NULL OR t.occurredAt >= :from) " +
+            "AND (:to IS NULL OR t.occurredAt <= :to) " +
+            "ORDER BY t.occurredAt DESC")
+    List<Transaction> findByPortfolioIdWithLegsAndFilters(
+            @Param("portfolioId") String portfolioId,
+            @Param("status") Transaction.TransactionStatus status,
+            @Param("type") Transaction.TransactionType type,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
+
     @Query("SELECT t FROM Transaction t WHERE t.portfolioId = :portfolioId " +
             "AND t.status = 'POSTED' " +
             "AND t.occurredAt BETWEEN :from AND :to " +

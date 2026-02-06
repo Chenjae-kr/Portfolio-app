@@ -208,6 +208,11 @@ export default {
     void: '거래 취소',
     save: '저장',
     createFailed: '거래 생성에 실패했습니다',
+    filterAllTypes: '전체 유형',
+    filterFrom: '시작일',
+    filterTo: '종료일',
+    filterApply: '필터 적용',
+    filterReset: '초기화',
   },
   performance: {
     title: '수익률 분석',

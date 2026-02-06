@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted } from 'vue';
 import { transactionApi } from '@/api';
-import type { Transaction } from '@/types';
+import type { Transaction, TransactionType } from '@/types';
 import { formatCurrency } from '@/utils/format';
 import { useI18n } from 'vue-i18n';
 import dayjs from 'dayjs';
@@ -20,7 +20,10 @@ const transactions = ref<Transaction[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const page = ref(0);
-const totalPages = ref(0);
+
+const selectedType = ref<'ALL' | TransactionType>('ALL');
+const fromDate = ref('');
+const toDate = ref('');
 
 const typeLabels: Record<string, string> = {
   BUY: '매수',
@@ -36,6 +39,21 @@ const typeLabels: Record<string, string> = {
   MERGER: '합병',
   TRANSFER: '이체',
 };
+
+const filterTypes: TransactionType[] = [
+  'BUY',
+  'SELL',
+  'DEPOSIT',
+  'WITHDRAW',
+  'DIVIDEND',
+  'INTEREST',
+  'FEE',
+  'TAX',
+  'FX_CONVERT',
+  'SPLIT',
+  'MERGER',
+  'TRANSFER',
+];
 
 const typeColors: Record<string, string> = {
   BUY: '#2563eb',
@@ -60,11 +78,12 @@ function getMainLeg(tx: Transaction) {
 function getDisplayAmount(tx: Transaction): number {
   const leg = getMainLeg(tx);
   if (!leg) return 0;
-  if (leg.legType === 'ASSET') {
-    return Math.abs(leg.amount);
-  }
-  // DEPOSIT/WITHDRAW: show positive amount
   return Math.abs(leg.amount);
+}
+
+function toDateTimeFilter(date: string, endOfDay = false): string | undefined {
+  if (!date) return undefined;
+  return endOfDay ? `${date}T23:59:59` : `${date}T00:00:00`;
 }
 
 async function fetchTransactions() {
@@ -74,12 +93,22 @@ async function fetchTransactions() {
     transactions.value = await transactionApi.list(props.portfolioId, {
       page: page.value,
       size: 20,
+      type: selectedType.value === 'ALL' ? undefined : selectedType.value,
+      from: toDateTimeFilter(fromDate.value),
+      to: toDateTimeFilter(toDate.value, true),
     });
   } catch (e: unknown) {
     error.value = (e as Error).message || 'Failed to load transactions';
   } finally {
     loading.value = false;
   }
+}
+
+function resetFilters() {
+  selectedType.value = 'ALL';
+  fromDate.value = '';
+  toDate.value = '';
+  fetchTransactions();
 }
 
 async function handleVoid(txId: string) {
@@ -103,6 +132,23 @@ defineExpose({ refresh: fetchTransactions });
       <h3>{{ t('transaction.title') }}</h3>
       <button class="btn btn-primary btn-sm" @click="$emit('add')">
         + {{ t('transaction.addTransaction') }}
+      </button>
+    </div>
+
+    <div class="filters">
+      <select v-model="selectedType" class="filter-input">
+        <option value="ALL">{{ t('transaction.filterAllTypes') }}</option>
+        <option v-for="type in filterTypes" :key="type" :value="type">
+          {{ typeLabels[type] || type }}
+        </option>
+      </select>
+      <input v-model="fromDate" type="date" class="filter-input" :aria-label="t('transaction.filterFrom')" />
+      <input v-model="toDate" type="date" class="filter-input" :aria-label="t('transaction.filterTo')" />
+      <button class="btn btn-secondary btn-sm" @click="fetchTransactions">
+        {{ t('transaction.filterApply') }}
+      </button>
+      <button class="btn btn-secondary btn-sm" @click="resetFilters">
+        {{ t('transaction.filterReset') }}
       </button>
     </div>
 
@@ -195,6 +241,21 @@ defineExpose({ refresh: fetchTransactions });
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filter-input {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary);
 }
 
 .list-header h3 {

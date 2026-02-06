@@ -11,6 +11,9 @@ export interface CreateTransactionRequest {
 export interface TransactionListParams {
   page?: number;
   size?: number;
+  type?: TransactionType;
+  from?: string;
+  to?: string;
 }
 
 export interface TransactionListResponse {

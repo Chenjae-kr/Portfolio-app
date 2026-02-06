@@ -3,7 +3,7 @@ package com.portfolio.api;
 import com.portfolio.analytics.service.PerformanceService;
 import com.portfolio.analytics.service.PerformanceService.PerformanceResult;
 import com.portfolio.common.exception.BusinessException;
-import com.portfolio.infra.init.DataInitializer;
+import com.portfolio.common.util.SecurityUtils;
 import com.portfolio.portfolio.service.PortfolioService;
 import com.portfolio.valuation.service.ValuationService;
 import com.portfolio.valuation.service.ValuationService.PortfolioValuation;
@@ -26,8 +26,7 @@ public class ValuationController {
     private final PortfolioService portfolioService;
     private final ValuationService valuationService;
     private final PerformanceService performanceService;
-
-    private static final String DEFAULT_WORKSPACE_ID = DataInitializer.DEFAULT_WORKSPACE_ID;
+    private final SecurityUtils securityUtils;
 
     /**
      * 포트폴리오 평가액 조회
@@ -38,7 +37,8 @@ public class ValuationController {
             @PathVariable String id,
             @RequestParam(defaultValue = "REALTIME") String mode) {
         try {
-            PortfolioValuation valuation = valuationService.calculateValuation(id, DEFAULT_WORKSPACE_ID);
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
+            PortfolioValuation valuation = valuationService.calculateValuation(id, workspaceId);
 
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("portfolioId", valuation.portfolioId);
@@ -80,8 +80,9 @@ public class ValuationController {
             @RequestParam(defaultValue = "TWR") String metric,
             @RequestParam(defaultValue = "DAILY") String frequency) {
         try {
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
             PerformanceResult result = performanceService.calculatePerformance(
-                    id, DEFAULT_WORKSPACE_ID,
+                    id, workspaceId,
                     LocalDate.parse(from), LocalDate.parse(to),
                     metric, frequency);
 

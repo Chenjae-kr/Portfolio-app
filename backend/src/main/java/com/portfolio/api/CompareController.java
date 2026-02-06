@@ -3,7 +3,7 @@ package com.portfolio.api;
 import com.portfolio.analytics.service.PerformanceService;
 import com.portfolio.analytics.service.PerformanceService.PerformanceResult;
 import com.portfolio.common.exception.BusinessException;
-import com.portfolio.infra.init.DataInitializer;
+import com.portfolio.common.util.SecurityUtils;
 import com.portfolio.portfolio.entity.Portfolio;
 import com.portfolio.portfolio.service.PortfolioService;
 import lombok.Data;
@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * 포트폴리오 비교 분석 API
@@ -28,8 +27,7 @@ public class CompareController {
 
     private final PerformanceService performanceService;
     private final PortfolioService portfolioService;
-
-    private static final String DEFAULT_WORKSPACE_ID = DataInitializer.DEFAULT_WORKSPACE_ID;
+    private final SecurityUtils securityUtils;
 
     /**
      * 다중 포트폴리오 성과 비교
@@ -37,6 +35,8 @@ public class CompareController {
     @PostMapping("/performance")
     public ResponseEntity<?> comparePerformance(@RequestBody CompareRequest request) {
         try {
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
+
             if (request.getPortfolioIds() == null || request.getPortfolioIds().size() < 2) {
                 return createErrorResponse("At least 2 portfolios required", HttpStatus.BAD_REQUEST);
             }
@@ -53,14 +53,11 @@ public class CompareController {
             List<Map<String, Object>> statsTable = new ArrayList<>();
 
             for (String portfolioId : request.getPortfolioIds()) {
-                // 포트폴리오 정보 조회
-                Portfolio portfolio = portfolioService.findById(portfolioId, DEFAULT_WORKSPACE_ID);
+                Portfolio portfolio = portfolioService.findById(portfolioId, workspaceId);
 
-                // 성과 계산
                 PerformanceResult result = performanceService.calculatePerformance(
-                        portfolioId, DEFAULT_WORKSPACE_ID, from, to, metric, frequency);
+                        portfolioId, workspaceId, from, to, metric, frequency);
 
-                // 수익률 곡선
                 Map<String, Object> curve = new LinkedHashMap<>();
                 curve.put("id", portfolioId);
                 curve.put("label", portfolio.getName());
@@ -68,7 +65,6 @@ public class CompareController {
                 curve.put("points", result.dataPoints);
                 curves.add(curve);
 
-                // 통계 지표
                 Map<String, Object> stat = new LinkedHashMap<>();
                 stat.put("id", portfolioId);
                 stat.put("label", portfolio.getName());

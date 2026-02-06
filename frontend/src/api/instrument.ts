@@ -23,17 +23,17 @@ export interface InstrumentSearchParams {
 
 export const instrumentApi = {
   async search(params: InstrumentSearchParams) {
-    const response = await apiClient.get('/instruments/search', { params });
+    const response = await apiClient.get('/v1/instruments/search', { params });
     return response.data;
   },
 
   async getById(id: string) {
-    const response = await apiClient.get(`/instruments/${id}`);
+    const response = await apiClient.get(`/v1/instruments/${id}`);
     return response.data;
   },
 
   async getAll(assetClass?: string) {
-    const response = await apiClient.get('/instruments', {
+    const response = await apiClient.get('/v1/instruments', {
       params: { assetClass },
     });
     return response.data;

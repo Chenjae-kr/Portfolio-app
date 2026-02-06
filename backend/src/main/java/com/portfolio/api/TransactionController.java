@@ -1,10 +1,12 @@
 package com.portfolio.api;
 
 import com.portfolio.common.exception.BusinessException;
-import com.portfolio.infra.init.DataInitializer;
+import com.portfolio.common.util.SecurityUtils;
 import com.portfolio.ledger.entity.Transaction;
 import com.portfolio.ledger.entity.TransactionLeg;
 import com.portfolio.ledger.service.TransactionService;
+import com.portfolio.pricing.entity.Instrument;
+import com.portfolio.pricing.repository.InstrumentRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,11 +15,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
@@ -25,14 +24,12 @@ import java.util.stream.Collectors;
 public class TransactionController {
 
     private final TransactionService transactionService;
-    private static final String DEFAULT_WORKSPACE_ID = DataInitializer.DEFAULT_WORKSPACE_ID;
+    private final InstrumentRepository instrumentRepository;
+    private final SecurityUtils securityUtils;
 
     /**
      * 거래 목록 조회 (필터: fromDate, toDate, type)
      * GET /v1/portfolios/{portfolioId}/transactions
-     * @param fromDate 선택 - 시작일 (YYYY-MM-DD)
-     * @param toDate 선택 - 종료일 (YYYY-MM-DD)
-     * @param type 선택 - 거래 유형 (BUY, SELL, DEPOSIT, WITHDRAW, DIVIDEND 등)
      */
     @GetMapping("/v1/portfolios/{portfolioId}/transactions")
     public ResponseEntity<?> listTransactions(
@@ -42,13 +39,14 @@ public class TransactionController {
             @RequestParam(required = false) String to
     ) {
         try {
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
             Transaction.TransactionType transactionType =
                     type != null && !type.isBlank() ? Transaction.TransactionType.valueOf(type) : null;
             LocalDateTime fromDateTime = from != null && !from.isBlank() ? LocalDateTime.parse(from) : null;
             LocalDateTime toDateTime = to != null && !to.isBlank() ? LocalDateTime.parse(to) : null;
 
             List<Transaction> transactions = transactionService.getTransactions(
-                    portfolioId, DEFAULT_WORKSPACE_ID, transactionType, fromDateTime, toDateTime);
+                    portfolioId, workspaceId, transactionType, fromDateTime, toDateTime);
 
             List<Map<String, Object>> items = transactions.stream()
                     .map(this::toTransactionDto)
@@ -81,6 +79,7 @@ public class TransactionController {
             @PathVariable String portfolioId,
             @RequestBody CreateTransactionRequest request) {
         try {
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
             List<TransactionLeg> legs = request.getLegs().stream()
                     .map(dto -> TransactionLeg.builder()
                             .legType(TransactionLeg.LegType.valueOf(dto.getLegType()))
@@ -100,7 +99,7 @@ public class TransactionController {
 
             Transaction transaction = transactionService.createTransaction(
                     portfolioId,
-                    DEFAULT_WORKSPACE_ID,
+                    workspaceId,
                     Transaction.TransactionType.valueOf(request.getType()),
                     occurredAt,
                     request.getNote(),
@@ -169,6 +168,18 @@ public class TransactionController {
     // ===== DTO 변환 =====
 
     private Map<String, Object> toTransactionDto(Transaction transaction) {
+        List<String> instrumentIds = transaction.getLegs().stream()
+                .map(TransactionLeg::getInstrumentId)
+                .filter(id -> id != null && !id.isBlank())
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<String, Instrument> instrumentMap = new HashMap<>();
+        if (!instrumentIds.isEmpty()) {
+            instrumentRepository.findByIdIn(instrumentIds)
+                    .forEach(inst -> instrumentMap.put(inst.getId(), inst));
+        }
+
         Map<String, Object> dto = new HashMap<>();
         dto.put("id", transaction.getId());
         dto.put("portfolioId", transaction.getPortfolioId());
@@ -181,14 +192,14 @@ public class TransactionController {
         dto.put("createdAt", transaction.getCreatedAt().toString());
 
         List<Map<String, Object>> legDtos = transaction.getLegs().stream()
-                .map(this::toLegDto)
+                .map(leg -> toLegDto(leg, instrumentMap))
                 .collect(Collectors.toList());
         dto.put("legs", legDtos);
 
         return dto;
     }
 
-    private Map<String, Object> toLegDto(TransactionLeg leg) {
+    private Map<String, Object> toLegDto(TransactionLeg leg, Map<String, Instrument> instrumentMap) {
         Map<String, Object> dto = new HashMap<>();
         dto.put("id", leg.getId());
         dto.put("legType", leg.getLegType().name());
@@ -199,6 +210,15 @@ public class TransactionController {
         dto.put("amount", leg.getAmount());
         dto.put("fxRateToBase", leg.getFxRateToBase());
         dto.put("account", leg.getAccount());
+
+        if (leg.getInstrumentId() != null) {
+            Instrument inst = instrumentMap.get(leg.getInstrumentId());
+            if (inst != null) {
+                dto.put("ticker", inst.getTicker());
+                dto.put("instrumentName", inst.getName());
+            }
+        }
+
         return dto;
     }
 

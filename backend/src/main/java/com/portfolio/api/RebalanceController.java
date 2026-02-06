@@ -1,7 +1,7 @@
 package com.portfolio.api;
 
 import com.portfolio.common.exception.BusinessException;
-import com.portfolio.infra.init.DataInitializer;
+import com.portfolio.common.util.SecurityUtils;
 import com.portfolio.rebalance.service.RebalanceService;
 import com.portfolio.rebalance.service.RebalanceService.RebalanceAnalysis;
 import lombok.RequiredArgsConstructor;
@@ -23,13 +23,13 @@ import java.util.Map;
 public class RebalanceController {
 
     private final RebalanceService rebalanceService;
-
-    private static final String DEFAULT_WORKSPACE_ID = DataInitializer.DEFAULT_WORKSPACE_ID;
+    private final SecurityUtils securityUtils;
 
     @GetMapping("/{id}/rebalance")
     public ResponseEntity<?> getRebalanceAnalysis(@PathVariable String id) {
         try {
-            RebalanceAnalysis analysis = rebalanceService.analyze(id, DEFAULT_WORKSPACE_ID);
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
+            RebalanceAnalysis analysis = rebalanceService.analyze(id, workspaceId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("data", analysis);

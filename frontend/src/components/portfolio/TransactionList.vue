@@ -186,12 +186,12 @@ defineExpose({ refresh: fetchTransactions });
           <td class="date-cell">{{ dayjs(tx.occurredAt).format('YYYY-MM-DD') }}</td>
           <td>
             <span class="type-badge" :style="{ color: typeColors[tx.type] || '#64748b' }">
-              {{ getTypeLabel(tx.type) }}
+              {{ typeLabels[tx.type] || tx.type }}
             </span>
           </td>
           <td>
             <template v-if="getMainLeg(tx)?.instrumentId">
-              {{ getMainLeg(tx)?.instrumentId }}
+              {{ getMainLeg(tx)?.ticker || getMainLeg(tx)?.instrumentName || getMainLeg(tx)?.instrumentId }}
             </template>
             <span v-else class="text-muted">-</span>
           </td>

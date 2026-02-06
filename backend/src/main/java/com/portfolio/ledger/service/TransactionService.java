@@ -69,23 +69,30 @@ public class TransactionService {
      * 거래 목록 조회 (legs 포함, 필터 옵션)
      */
     @Transactional(readOnly = true)
-    public List<Transaction> getTransactions(String portfolioId, String workspaceId,
-                                             LocalDate fromDate, LocalDate toDate,
-                                             Transaction.TransactionType type) {
+    public List<Transaction> getTransactions(String portfolioId, String workspaceId) {
+        return getTransactions(portfolioId, workspaceId, null, null, null);
+    }
+
+    /**
+     * 거래 목록 조회 (필터)
+     */
+    @Transactional(readOnly = true)
+    public List<Transaction> getTransactions(String portfolioId,
+                                             String workspaceId,
+                                             Transaction.TransactionType type,
+                                             LocalDateTime from,
+                                             LocalDateTime to) {
         // 포트폴리오 접근 권한 확인
         portfolioRepository.findByIdAndWorkspaceId(portfolioId, workspaceId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.PORTFOLIO_NOT_FOUND));
 
-        // PostgreSQL null 파라미터 타입 추론 오류 방지: null 대신 sentinel 사용
-        LocalDateTime from = fromDate != null ? fromDate.atStartOfDay() : LocalDateTime.of(1900, 1, 1, 0, 0);
-        LocalDateTime to = toDate != null ? toDate.atTime(LocalTime.MAX) : LocalDateTime.of(2099, 12, 31, 23, 59, 59);
-
-        if (type != null) {
-            return transactionRepository.findByPortfolioIdWithDateFiltersAndType(
-                    portfolioId, Transaction.TransactionStatus.VOID, from, to, type);
-        }
-        return transactionRepository.findByPortfolioIdWithDateFilters(
-                portfolioId, Transaction.TransactionStatus.VOID, from, to);
+        return transactionRepository.findByPortfolioIdWithLegsAndFilters(
+                portfolioId,
+                Transaction.TransactionStatus.VOID,
+                type,
+                from,
+                to
+        );
     }
 
     /**

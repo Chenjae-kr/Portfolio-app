@@ -19,17 +19,41 @@ const { t } = useI18n();
 const transactions = ref<Transaction[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
+const page = ref(0);
 
-// 필터 상태
-const filterFromDate = ref<string>('');
-const filterToDate = ref<string>('');
-const filterType = ref<TransactionType | ''>('');
+const selectedType = ref<'ALL' | TransactionType>('ALL');
+const fromDate = ref('');
+const toDate = ref('');
 
-const TX_TYPES = ['BUY', 'SELL', 'DEPOSIT', 'WITHDRAW', 'DIVIDEND', 'INTEREST', 'FEE', 'TAX', 'FX_CONVERT', 'SPLIT', 'MERGER', 'TRANSFER'] as const;
+const typeLabels: Record<string, string> = {
+  BUY: '매수',
+  SELL: '매도',
+  DEPOSIT: '입금',
+  WITHDRAW: '출금',
+  DIVIDEND: '배당',
+  INTEREST: '이자',
+  FEE: '수수료',
+  TAX: '세금',
+  FX_CONVERT: '환전',
+  SPLIT: '액면분할',
+  MERGER: '합병',
+  TRANSFER: '이체',
+};
 
-function getTypeLabel(type: string) {
-  return t(`transaction.types.${type}`) || type;
-}
+const filterTypes: TransactionType[] = [
+  'BUY',
+  'SELL',
+  'DEPOSIT',
+  'WITHDRAW',
+  'DIVIDEND',
+  'INTEREST',
+  'FEE',
+  'TAX',
+  'FX_CONVERT',
+  'SPLIT',
+  'MERGER',
+  'TRANSFER',
+];
 
 const typeColors: Record<string, string> = {
   BUY: '#2563eb',
@@ -54,23 +78,25 @@ function getMainLeg(tx: Transaction) {
 function getDisplayAmount(tx: Transaction): number {
   const leg = getMainLeg(tx);
   if (!leg) return 0;
-  if (leg.legType === 'ASSET') {
-    return Math.abs(leg.amount);
-  }
-  // DEPOSIT/WITHDRAW: show positive amount
   return Math.abs(leg.amount);
+}
+
+function toDateTimeFilter(date: string, endOfDay = false): string | undefined {
+  if (!date) return undefined;
+  return endOfDay ? `${date}T23:59:59` : `${date}T00:00:00`;
 }
 
 async function fetchTransactions() {
   loading.value = true;
   error.value = null;
   try {
-    const params: { fromDate?: string; toDate?: string; type?: TransactionType } = {};
-    if (filterFromDate.value) params.fromDate = filterFromDate.value;
-    if (filterToDate.value) params.toDate = filterToDate.value;
-    if (filterType.value) params.type = filterType.value as TransactionType;
-
-    transactions.value = await transactionApi.list(props.portfolioId, params);
+    transactions.value = await transactionApi.list(props.portfolioId, {
+      page: page.value,
+      size: 20,
+      type: selectedType.value === 'ALL' ? undefined : selectedType.value,
+      from: toDateTimeFilter(fromDate.value),
+      to: toDateTimeFilter(toDate.value, true),
+    });
   } catch (e: unknown) {
     error.value = (e as Error).message || 'Failed to load transactions';
   } finally {
@@ -78,14 +104,10 @@ async function fetchTransactions() {
   }
 }
 
-function applyFilter() {
-  fetchTransactions();
-}
-
-function resetFilter() {
-  filterFromDate.value = '';
-  filterToDate.value = '';
-  filterType.value = '';
+function resetFilters() {
+  selectedType.value = 'ALL';
+  fromDate.value = '';
+  toDate.value = '';
   fetchTransactions();
 }
 
@@ -113,26 +135,21 @@ defineExpose({ refresh: fetchTransactions });
       </button>
     </div>
 
-    <div class="filter-bar">
-      <div class="filter-group">
-        <label>{{ t('transaction.filterFromDate') }}</label>
-        <input v-model="filterFromDate" type="date" class="filter-input" />
-      </div>
-      <div class="filter-group">
-        <label>{{ t('transaction.filterToDate') }}</label>
-        <input v-model="filterToDate" type="date" class="filter-input" />
-      </div>
-      <div class="filter-group">
-        <label>{{ t('transaction.filterType') }}</label>
-        <select v-model="filterType" class="filter-select">
-          <option value="">{{ t('transaction.filterAllTypes') }}</option>
-          <option v-for="txType in TX_TYPES" :key="txType" :value="txType">{{ getTypeLabel(txType) }}</option>
-        </select>
-      </div>
-      <div class="filter-actions">
-        <button class="btn btn-secondary btn-sm" @click="applyFilter">{{ t('transaction.filterApply') }}</button>
-        <button class="btn btn-outline btn-sm" @click="resetFilter">{{ t('transaction.filterReset') }}</button>
-      </div>
+    <div class="filters">
+      <select v-model="selectedType" class="filter-input">
+        <option value="ALL">{{ t('transaction.filterAllTypes') }}</option>
+        <option v-for="type in filterTypes" :key="type" :value="type">
+          {{ typeLabels[type] || type }}
+        </option>
+      </select>
+      <input v-model="fromDate" type="date" class="filter-input" :aria-label="t('transaction.filterFrom')" />
+      <input v-model="toDate" type="date" class="filter-input" :aria-label="t('transaction.filterTo')" />
+      <button class="btn btn-secondary btn-sm" @click="fetchTransactions">
+        {{ t('transaction.filterApply') }}
+      </button>
+      <button class="btn btn-secondary btn-sm" @click="resetFilters">
+        {{ t('transaction.filterReset') }}
+      </button>
     </div>
 
     <div v-if="loading" class="loading-state">
@@ -224,6 +241,21 @@ defineExpose({ refresh: fetchTransactions });
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.filter-input {
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary, #fff);
+  color: var(--text-primary);
 }
 
 .list-header h3 {

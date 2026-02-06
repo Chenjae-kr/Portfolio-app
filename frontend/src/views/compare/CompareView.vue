@@ -443,16 +443,16 @@ const statsTable = computed(() => {
 }
 
 .date-inputs {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 8px;
-  min-width: 0; /* 플렉스 자식이 카드 밖으로 넘치지 않도록 */
+  width: 100%;
 }
 
 .date-inputs input {
-  flex: 1 1 0%;
-  min-width: 140px; /* 날짜가 완전히 보이도록 최소 너비 보장 */
-  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
 }
 
 .date-inputs span {

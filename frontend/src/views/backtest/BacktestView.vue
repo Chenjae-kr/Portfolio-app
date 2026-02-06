@@ -163,8 +163,15 @@ async function runBacktest() {
 <template>
   <div class="backtest-view">
     <header class="page-header">
-      <h1>{{ t('backtest.title') }}</h1>
-      <p>{{ t('backtest.subtitle') }}</p>
+      <div class="header-content">
+        <div>
+          <h1>{{ t('backtest.title') }}</h1>
+          <p>{{ t('backtest.subtitle') }}</p>
+        </div>
+        <button class="btn btn-secondary" @click="router.push('/backtest/history')">
+          {{ t('backtest.history.title') }}
+        </button>
+      </div>
     </header>
 
     <div class="backtest-form card">
@@ -355,6 +362,13 @@ async function runBacktest() {
 
 .page-header {
   margin-bottom: 24px;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
 }
 
 .page-header h1 {

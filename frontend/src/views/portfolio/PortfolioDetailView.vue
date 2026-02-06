@@ -19,9 +19,11 @@ const activeTab = ref('positions');
 const showTransactionForm = ref(false);
 const transactionListRef = ref<InstanceType<typeof TransactionList> | null>(null);
 
-function onTransactionSaved() {
+async function onTransactionSaved() {
   showTransactionForm.value = false;
   transactionListRef.value?.refresh();
+  // 거래 후 평가 데이터 갱신
+  await valuationStore.fetchValuation(portfolioId.value);
 }
 
 function onAddTransaction() {

@@ -9,6 +9,7 @@ import TransactionList from '@/components/portfolio/TransactionList.vue';
 import TransactionForm from '@/components/portfolio/TransactionForm.vue';
 import PerformanceChart from '@/components/portfolio/PerformanceChart.vue';
 import RebalancePanel from '@/components/portfolio/RebalancePanel.vue';
+import AllocationChart from '@/components/portfolio/AllocationChart.vue';
 import { useI18n } from 'vue-i18n';
 
 const route = useRoute();
@@ -48,6 +49,12 @@ const returnPercent = computed(() => {
   const { totalValueBase, totalPnlBase } = valuation.value;
   const costBasis = totalValueBase - totalPnlBase;
   return costBasis > 0 ? totalPnlBase / costBasis : 0;
+});
+
+const cashWeight = computed(() => {
+  if (!valuation.value) return 0;
+  const { cashValueBase, totalValueBase } = valuation.value;
+  return totalValueBase > 0 ? cashValueBase / totalValueBase : 0;
 });
 
 // Edit modal state
@@ -208,6 +215,11 @@ onMounted(async () => {
       <!-- Tab Content -->
       <div class="tab-content">
         <template v-if="activeTab === 'positions'">
+          <AllocationChart
+            v-if="valuation && valuation.positions.length > 0"
+            :positions="valuation.positions"
+            :cash-weight="cashWeight"
+          />
           <PositionTable
             v-if="valuation"
             :positions="valuation.positions"

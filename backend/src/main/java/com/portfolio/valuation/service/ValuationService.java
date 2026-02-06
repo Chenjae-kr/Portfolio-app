@@ -86,15 +86,20 @@ public class ValuationService {
             String ticker = instrumentId;
             String name = null;
             Optional<Instrument> instrument = instrumentRepository.findById(instrumentId);
+            String assetClass = "EQUITY"; // default
             if (instrument.isPresent()) {
                 ticker = instrument.get().getTicker() != null ? instrument.get().getTicker() : instrumentId;
                 name = instrument.get().getName();
+                if (instrument.get().getAssetClass() != null) {
+                    assetClass = instrument.get().getAssetClass().name();
+                }
             }
 
             PositionValuation pv = new PositionValuation();
             pv.instrumentId = instrumentId;
             pv.ticker = ticker;
             pv.instrumentName = name;
+            pv.assetClass = assetClass;
             pv.quantity = acc.quantity;
             pv.avgCost = acc.getAvgCost();
             pv.marketPrice = currentPrice;
@@ -264,6 +269,7 @@ public class ValuationService {
         public String instrumentId;
         public String ticker;
         public String instrumentName;
+        public String assetClass;
         public BigDecimal quantity;
         public BigDecimal avgCost;
         public BigDecimal marketPrice;

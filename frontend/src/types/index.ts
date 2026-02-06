@@ -118,6 +118,7 @@ export interface ValuationPosition {
   instrumentId: string;
   instrumentName?: string;
   ticker?: string;
+  assetClass?: AssetClass;
   quantity: number;
   avgCost?: number;
   marketPrice: number;
@@ -158,6 +159,13 @@ export interface RiskMetrics {
   sharpe: number;
 }
 
+export interface BenchmarkSeries {
+  id: string;
+  label: string;
+  dataPoints: PerformanceDataPoint[];
+  stats: RiskMetrics;
+}
+
 export interface PerformanceData {
   portfolioId: string;
   from: string;
@@ -166,6 +174,7 @@ export interface PerformanceData {
   frequency: string;
   dataPoints: PerformanceDataPoint[];
   stats: RiskMetrics;
+  benchmarks?: BenchmarkSeries[];
 }
 
 export interface PerformancePoint {

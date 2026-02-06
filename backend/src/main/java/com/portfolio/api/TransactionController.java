@@ -31,10 +31,20 @@ public class TransactionController {
      * GET /v1/portfolios/{portfolioId}/transactions
      */
     @GetMapping("/v1/portfolios/{portfolioId}/transactions")
-    public ResponseEntity<?> listTransactions(@PathVariable String portfolioId) {
+    public ResponseEntity<?> listTransactions(
+            @PathVariable String portfolioId,
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String from,
+            @RequestParam(required = false) String to
+    ) {
         try {
+            Transaction.TransactionType transactionType =
+                    type != null && !type.isBlank() ? Transaction.TransactionType.valueOf(type) : null;
+            LocalDateTime fromDateTime = from != null && !from.isBlank() ? LocalDateTime.parse(from) : null;
+            LocalDateTime toDateTime = to != null && !to.isBlank() ? LocalDateTime.parse(to) : null;
+
             List<Transaction> transactions = transactionService.getTransactions(
-                    portfolioId, DEFAULT_WORKSPACE_ID);
+                    portfolioId, DEFAULT_WORKSPACE_ID, transactionType, fromDateTime, toDateTime);
 
             List<Map<String, Object>> items = transactions.stream()
                     .map(this::toTransactionDto)
@@ -51,6 +61,8 @@ public class TransactionController {
             return ResponseEntity.ok(response);
         } catch (BusinessException e) {
             return createErrorResponse(e.getMessage(), e.getErrorCode().getHttpStatus());
+        } catch (IllegalArgumentException e) {
+            return createErrorResponse(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (Exception e) {
             return createErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }

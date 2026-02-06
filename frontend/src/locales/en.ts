@@ -208,6 +208,11 @@ export default {
     void: 'Void Transaction',
     save: 'Save',
     createFailed: 'Failed to create transaction',
+    filterAllTypes: 'All types',
+    filterFrom: 'From date',
+    filterTo: 'To date',
+    filterApply: 'Apply filters',
+    filterReset: 'Reset',
   },
   performance: {
     title: 'Performance Analysis',

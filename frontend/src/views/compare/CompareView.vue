@@ -439,13 +439,16 @@ const statsTable = computed(() => {
 }
 
 .date-inputs {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: 8px;
+  width: 100%;
 }
 
 .date-inputs input {
-  flex: 1;
+  width: 100%;
+  min-width: 0;
 }
 
 .date-inputs span {

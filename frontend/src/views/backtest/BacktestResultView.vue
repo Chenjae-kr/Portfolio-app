@@ -42,9 +42,11 @@ onMounted(async () => {
 const result = computed(() => backtestStore.currentResult);
 
 const totalReturnPercent = computed(() => {
-  if (!result.value?.stats?.totalInvested || !result.value?.series?.length) return null;
-  const finalValue = result.value.series[result.value.series.length - 1].equityCurveBase;
-  const invested = result.value.stats.totalInvested;
+  const stats = result.value?.stats;
+  const series = result.value?.series;
+  if (!stats?.totalInvested || !series?.length) return null;
+  const finalValue = series[series.length - 1].equityCurveBase;
+  const invested = stats.totalInvested;
   if (invested === 0) return null;
   return (finalValue - invested) / invested;
 });
@@ -334,7 +336,7 @@ const drawdownChartOption = computed(() => {
                 </td>
                 <td class="text-right font-mono">
                   {{ trade.action === 'DEPOSIT'
-                    ? formatCurrency(trade.amount, 'KRW')
+                    ? formatCurrency(trade.amount ?? 0, 'KRW')
                     : formatCurrency(trade.fee, 'KRW') }}
                 </td>
               </tr>

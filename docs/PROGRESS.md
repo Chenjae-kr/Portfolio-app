@@ -19,10 +19,10 @@
 | 가격 데이터 | 40% | 🚧 Mock 구현 |
 | 성과 분석 | 80% | ✅ 구현 완료 |
 | 비교 차트 | 80% | ✅ 구현 완료 |
-| 백테스팅 | 0% | ⏸️ 대기 |
+| 백테스팅 | 80% | ✅ 구현 완료 |
 | 리밸런싱 | 0% | ⏸️ 대기 |
 
-**전체 진척률:** 약 **68%**
+**전체 진척률:** 약 **75%**
 
 ---
 
@@ -131,14 +131,23 @@
 
 ---
 
-### 6. Strategy Backtesting ⏸️ 0%
+### 6. Strategy Backtesting ✅ 80%
 
-**⏸️ 미구현:**
-- [ ] Backtest 설정
+**✅ 완료:**
+- [x] BacktestService (정적배분 + 리밸런싱 + 거래비용 엔진)
+- [x] BacktestController (REST API 7개 엔드포인트)
+- [x] 주기적 리밸런싱 (Monthly/Quarterly/Semi-Annual/Annual)
+- [x] 밴드 리밸런싱 (목표 비중 ± threshold 이탈 시)
+- [x] Equity Curve, Drawdown, Trade Log 생성
+- [x] 성과 통계 (CAGR, Volatility, MDD, Sharpe Ratio)
+- [x] BacktestView.vue (설정 폼 - 종목 프리셋, 비중 설정)
+- [x] BacktestResultView.vue (ECharts 차트 + 거래 로그)
+- [x] i18n 번역 (한국어/영어 30+ 키)
+
+**🚧 진행 필요:**
 - [ ] RabbitMQ 비동기 처리
-- [ ] Backtest 실행 엔진
-- [ ] 결과 조회 API
-- [ ] Backtest UI
+- [ ] Backtest 이력 목록 UI
+- [ ] 배당 재투자 로직
 
 ---
 
@@ -617,11 +626,12 @@ frontend/src/
 - 성과 분석: 0% → **80%** (신규)
 - 가격 데이터: 0% → **40%** (Mock 구현)
 - 비교 차트: 0% → **80%** (신규)
-- 전체 진척률: 38% → **68%** (+30%p)
-- API 엔드포인트: 19개 → **28개** (+9개)
+- 백테스팅: 0% → **80%** (신규)
+- 전체 진척률: 38% → **75%** (+37%p)
+- API 엔드포인트: 19개 → **35개** (+16개)
 
 ---
 
-**문서 버전:** 2.1.0  
-**마지막 업데이트:** 2026-02-06 (Sprint 1~5 완료)  
+**문서 버전:** 2.2.0  
+**마지막 업데이트:** 2026-02-06 (Sprint 1~6 완료)  
 **작성자:** Development Team

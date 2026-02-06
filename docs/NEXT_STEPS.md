@@ -2,13 +2,13 @@
 
 > **작성일:** 2026-02-06  
 > **현재 버전:** v0.0.1-SNAPSHOT  
-> **전체 진척률:** 68%
+> **전체 진척률:** 75%
 
 ---
 
 ## 📊 현재 완료 상태
 
-### ✅ 완성된 기능 (68%)
+### ✅ 완성된 기능 (75%)
 
 ```
 ✅ 인프라 설정      ████████████████████ 100%
@@ -20,7 +20,7 @@
 ✅ 가격 데이터      ████████░░░░░░░░░░░░  40%
 ✅ 성과 분석        ████████████████░░░░  80%
 ✅ 비교 차트        ████████████████░░░░  80%
-⏸️ 백테스팅         ░░░░░░░░░░░░░░░░░░░░   0%
+✅ 백테스팅         ████████████████░░░░  80%
 ⏸️ 리밸런싱         ░░░░░░░░░░░░░░░░░░░░   0%
 ```
 
@@ -38,6 +38,7 @@
 - ✅ 성과 분석 (TWR, CAGR, Volatility, MDD, Sharpe)
 - ✅ ECharts 수익률 차트 + 기간 선택기
 - ✅ 포트폴리오 비교 분석 (Compare API + ECharts 비교 차트)
+- ✅ 백테스트 엔진 (정적배분 + 리밸런싱 + ECharts 결과 차트)
 
 ---
 
@@ -147,36 +148,28 @@
 
 ---
 
-### Sprint 6: Backtesting Engine (백테스트) 🟢 보통
+### Sprint 6: Backtesting Engine (백테스트) ✅ 완료
 
 **목표:** 전략 백테스트 기본 구현
 
-#### Backend
-1. **Backtest Service**
-   - 정적 배분 백테스트
-   - 주기적 리밸런싱
-   - 거래 비용 반영
-   - 배당 재투자 옵션
+**✅ 완료된 항목:**
+- [x] BacktestService (정적 배분 + 리밸런싱 + 거래비용 0.1% 엔진)
+- [x] BacktestController (REST API 7개 엔드포인트)
+- [x] 주기적 리밸런싱 (Monthly/Quarterly/Semi-Annual/Annual)
+- [x] 밴드 리밸런싱 (목표 비중 ± threshold 이탈 시)
+- [x] In-memory Config/Run/Result 저장소
+- [x] 일별 Equity Curve, Drawdown, Trade Log 생성
+- [x] 성과 통계 (CAGR, Volatility, MDD, Sharpe Ratio)
+- [x] BacktestView.vue (종목 프리셋 10개, 비중 설정, 리밸런싱 전략)
+- [x] BacktestResultView.vue (ECharts Equity Curve + Drawdown 차트)
+- [x] Trade Log 테이블 (50건 표시)
+- [x] i18n 번역 (한국어/영어 30+ 키)
 
-2. **RabbitMQ 비동기 처리**
-   - BacktestWorker 구현
-   - Job Queue 설정
-   - 상태 추적 (RUNNING/SUCCEEDED/FAILED)
-
-3. **API 엔드포인트**
-   - `POST /api/v1/backtests/runs` - 백테스트 실행
-   - `GET /api/v1/backtests/runs/{id}` - 상태 조회
-   - `GET /api/v1/backtests/runs/{id}/results` - 결과 조회
-
-#### Frontend
-4. **Backtest Studio UI**
-   - 백테스트 설정 폼
-   - 결과 차트 (Equity Curve, Drawdown)
-   - 거래 로그 테이블
-
-**예상 기간:** 4-5일  
-**우선순위:** 🟢 Medium  
-**의존성:** Performance Analytics 완료 후
+**🚧 남은 항목:**
+- [ ] RabbitMQ 비동기 처리 (대규모 백테스트)
+- [ ] Backtest 이력 목록 UI
+- [ ] 배당 재투자 시뮬레이션
+- [ ] DB 영속화 (현재 in-memory)
 
 ---
 

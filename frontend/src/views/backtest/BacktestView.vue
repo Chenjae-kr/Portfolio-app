@@ -2,11 +2,12 @@
 import { ref, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useBacktestStore } from '@/stores';
-import type { RebalanceType, RebalancePeriod, PriceMode, PortfolioTarget, AssetClass } from '@/types';
-import { formatCurrency } from '@/utils/format';
+import type { RebalanceType, RebalancePeriod, PriceMode, AssetClass } from '@/types';
+import { useI18n } from 'vue-i18n';
 
 const router = useRouter();
 const backtestStore = useBacktestStore();
+const { t } = useI18n();
 
 // Form state
 const name = ref('My Backtest');
@@ -19,14 +20,21 @@ const bandThreshold = ref(0.05);
 const dividendReinvest = ref(true);
 const priceMode = ref<PriceMode>('ADJ_CLOSE');
 
-// Targets (simplified for now)
-const targets = ref<(PortfolioTarget & { name: string })[]>([
+interface TargetRow {
+  id: string;
+  instrumentId: string;
+  name: string;
+  assetClass: AssetClass;
+  targetWeight: number;
+}
+
+// Default targets: 60/40 portfolio
+const targets = ref<TargetRow[]>([
   { id: '1', instrumentId: 'SPY', name: 'S&P 500 ETF', assetClass: 'EQUITY', targetWeight: 0.6 },
-  { id: '2', instrumentId: 'AGG', name: 'US Bonds ETF', assetClass: 'BOND', targetWeight: 0.4 },
+  { id: '2', instrumentId: 'BND', name: 'US Total Bond', assetClass: 'BOND', targetWeight: 0.4 },
 ]);
 
 const error = ref('');
-const step = ref(1);
 
 const totalWeight = computed(() =>
   targets.value.reduce((sum, t) => sum + t.targetWeight, 0)
@@ -49,12 +57,26 @@ const rebalancePeriods: { value: RebalancePeriod; label: string }[] = [
   { value: 'ANNUAL', label: 'Annual' },
 ];
 
+// 종목 프리셋
+const presets = [
+  { instrumentId: 'SPY', name: 'S&P 500 ETF', assetClass: 'EQUITY' as AssetClass },
+  { instrumentId: 'QQQ', name: 'Nasdaq 100 ETF', assetClass: 'EQUITY' as AssetClass },
+  { instrumentId: 'VOO', name: 'Vanguard S&P 500', assetClass: 'EQUITY' as AssetClass },
+  { instrumentId: 'VTI', name: 'US Total Market', assetClass: 'EQUITY' as AssetClass },
+  { instrumentId: 'BND', name: 'US Total Bond', assetClass: 'BOND' as AssetClass },
+  { instrumentId: 'TLT', name: '20+ Year Treasury', assetClass: 'BOND' as AssetClass },
+  { instrumentId: '005930', name: 'Samsung Electronics', assetClass: 'EQUITY' as AssetClass },
+  { instrumentId: 'AAPL', name: 'Apple Inc.', assetClass: 'EQUITY' as AssetClass },
+  { instrumentId: 'MSFT', name: 'Microsoft Corp.', assetClass: 'EQUITY' as AssetClass },
+  { instrumentId: 'NVDA', name: 'NVIDIA Corp.', assetClass: 'EQUITY' as AssetClass },
+];
+
 function addTarget() {
   targets.value.push({
     id: Date.now().toString(),
     instrumentId: '',
     name: '',
-    assetClass: 'EQUITY' as AssetClass,
+    assetClass: 'EQUITY',
     targetWeight: 0,
   });
 }
@@ -63,9 +85,17 @@ function removeTarget(index: number) {
   targets.value.splice(index, 1);
 }
 
+function onInstrumentSelect(target: TargetRow) {
+  const preset = presets.find(p => p.instrumentId === target.instrumentId);
+  if (preset) {
+    target.name = preset.name;
+    target.assetClass = preset.assetClass;
+  }
+}
+
 async function runBacktest() {
   if (!isWeightValid.value) {
-    error.value = 'Target weights must sum to 100%';
+    error.value = t('backtest.weightError');
     return;
   }
 
@@ -91,16 +121,22 @@ async function runBacktest() {
       },
     });
 
-    // Poll for completion
-    const completedRun = await backtestStore.pollRunStatus(run.id);
-
-    if (completedRun.status === 'SUCCEEDED') {
+    // 동기 실행이므로 이미 결과가 있음
+    if (run.status === 'SUCCEEDED') {
       router.push(`/backtest/${run.id}`);
+    } else if (run.status === 'RUNNING') {
+      // 비동기인 경우 polling
+      const completedRun = await backtestStore.pollRunStatus(run.id);
+      if (completedRun.status === 'SUCCEEDED') {
+        router.push(`/backtest/${run.id}`);
+      } else {
+        error.value = completedRun.errorMessage || t('backtest.failed');
+      }
     } else {
-      error.value = completedRun.errorMessage || 'Backtest failed';
+      error.value = run.errorMessage || t('backtest.failed');
     }
   } catch (e: unknown) {
-    error.value = (e as Error).message || 'Failed to run backtest';
+    error.value = (e as Error).message || t('backtest.failed');
   }
 }
 </script>
@@ -108,8 +144,8 @@ async function runBacktest() {
 <template>
   <div class="backtest-view">
     <header class="page-header">
-      <h1>Backtest Studio</h1>
-      <p>Test your investment strategies with historical data</p>
+      <h1>{{ t('backtest.title') }}</h1>
+      <p>{{ t('backtest.subtitle') }}</p>
     </header>
 
     <div class="backtest-form card">
@@ -119,26 +155,26 @@ async function runBacktest() {
 
       <!-- Step 1: Basic Settings -->
       <section class="form-section">
-        <h3>1. Basic Settings</h3>
+        <h3>{{ t('backtest.basicSettings') }}</h3>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Backtest Name</label>
+            <label class="form-label">{{ t('backtest.backtestName') }}</label>
             <input v-model="name" type="text" class="form-input" />
           </div>
           <div class="form-group">
-            <label class="form-label">Initial Capital</label>
+            <label class="form-label">{{ t('backtest.initialCapital') }}</label>
             <input v-model.number="initialCapital" type="number" class="form-input" />
           </div>
         </div>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Start Date</label>
+            <label class="form-label">{{ t('backtest.startDate') }}</label>
             <input v-model="startDate" type="date" class="form-input" />
           </div>
           <div class="form-group">
-            <label class="form-label">End Date</label>
+            <label class="form-label">{{ t('backtest.endDate') }}</label>
             <input v-model="endDate" type="date" class="form-input" />
           </div>
         </div>
@@ -146,23 +182,21 @@ async function runBacktest() {
 
       <!-- Step 2: Asset Allocation -->
       <section class="form-section">
-        <h3>2. Asset Allocation</h3>
-        <p class="section-hint">Define your target portfolio weights (must sum to 100%)</p>
+        <h3>{{ t('backtest.assetAllocation') }}</h3>
+        <p class="section-hint">{{ t('backtest.allocationHint') }}</p>
 
         <div class="targets-list">
           <div v-for="(target, index) in targets" :key="target.id" class="target-row">
-            <input
+            <select
               v-model="target.instrumentId"
-              type="text"
-              class="form-input"
-              placeholder="Ticker (e.g., SPY)"
-            />
-            <input
-              v-model="target.name"
-              type="text"
-              class="form-input"
-              placeholder="Name"
-            />
+              class="form-input ticker-select"
+              @change="onInstrumentSelect(target)"
+            >
+              <option value="" disabled>{{ t('backtest.selectInstrument') }}</option>
+              <option v-for="p in presets" :key="p.instrumentId" :value="p.instrumentId">
+                {{ p.instrumentId }} - {{ p.name }}
+              </option>
+            </select>
             <div class="weight-input">
               <input
                 v-model.number="target.targetWeight"
@@ -181,20 +215,20 @@ async function runBacktest() {
         </div>
 
         <div class="targets-footer">
-          <button class="btn btn-secondary" @click="addTarget">+ Add Asset</button>
+          <button class="btn btn-secondary" @click="addTarget">+ {{ t('backtest.addAsset') }}</button>
           <span class="weight-total" :class="{ invalid: !isWeightValid }">
-            Total: {{ (totalWeight * 100).toFixed(1) }}%
+            {{ t('backtest.total') }}: {{ (totalWeight * 100).toFixed(1) }}%
           </span>
         </div>
       </section>
 
       <!-- Step 3: Rebalancing -->
       <section class="form-section">
-        <h3>3. Rebalancing Strategy</h3>
+        <h3>{{ t('backtest.rebalancing') }}</h3>
 
         <div class="form-row">
           <div class="form-group">
-            <label class="form-label">Rebalancing Type</label>
+            <label class="form-label">{{ t('backtest.rebalanceType') }}</label>
             <select v-model="rebalanceType" class="form-input">
               <option v-for="r in rebalanceTypes" :key="r.value" :value="r.value">
                 {{ r.label }}
@@ -203,7 +237,7 @@ async function runBacktest() {
           </div>
 
           <div class="form-group" v-if="rebalanceType === 'PERIODIC'">
-            <label class="form-label">Rebalancing Period</label>
+            <label class="form-label">{{ t('backtest.rebalancePeriod') }}</label>
             <select v-model="rebalancePeriod" class="form-input">
               <option v-for="p in rebalancePeriods" :key="p.value" :value="p.value">
                 {{ p.label }}
@@ -212,7 +246,7 @@ async function runBacktest() {
           </div>
 
           <div class="form-group" v-if="rebalanceType === 'BAND'">
-            <label class="form-label">Band Threshold</label>
+            <label class="form-label">{{ t('backtest.bandThreshold') }}</label>
             <input
               v-model.number="bandThreshold"
               type="number"
@@ -228,7 +262,7 @@ async function runBacktest() {
           <div class="form-group">
             <label class="checkbox-label">
               <input type="checkbox" v-model="dividendReinvest" />
-              <span>Reinvest Dividends</span>
+              <span>{{ t('backtest.reinvestDividends') }}</span>
             </label>
           </div>
         </div>
@@ -242,7 +276,7 @@ async function runBacktest() {
           @click="runBacktest"
         >
           <span v-if="backtestStore.loading || backtestStore.polling" class="spinner"></span>
-          <span v-else>Run Backtest</span>
+          <span v-else>{{ t('backtest.run') }}</span>
         </button>
       </div>
     </div>
@@ -306,9 +340,13 @@ async function runBacktest() {
 
 .target-row {
   display: grid;
-  grid-template-columns: 120px 1fr 140px 40px;
+  grid-template-columns: 1fr 140px 40px;
   gap: 12px;
   align-items: center;
+}
+
+.ticker-select {
+  min-width: 0;
 }
 
 .weight-input {

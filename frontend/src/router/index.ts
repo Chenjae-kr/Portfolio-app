@@ -49,6 +49,12 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/backtest/history',
+    name: 'BacktestHistory',
+    component: () => import('@/views/backtest/BacktestHistoryView.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
     path: '/backtest/:id',
     name: 'BacktestResult',
     component: () => import('@/views/backtest/BacktestResultView.vue'),

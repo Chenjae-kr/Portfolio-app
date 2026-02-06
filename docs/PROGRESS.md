@@ -202,7 +202,10 @@ backend/src/main/java/com/portfolio/
 │   ├── InstrumentController ✅ 금융상품 API
 │   ├── PortfolioGroupController ✅ 그룹 API
 │   ├── TransactionController ✅ 거래 API 🆕
-│   └── ValuationController  ✅ 평가/성과 API 🆕
+│   ├── ValuationController  ✅ 평가/성과 API 🆕
+│   ├── CompareController    ✅ 비교 API 🆕
+│   ├── BacktestController   ✅ 백테스트 API 🆕
+│   └── RebalanceController  ✅ 리밸런싱 API 🆕
 ├── auth/                    ✅ 인증/인가
 │   ├── entity/User          ✅ 사용자 엔티티
 │   ├── jwt/                 ✅ JWT 처리
@@ -228,7 +231,10 @@ backend/src/main/java/com/portfolio/
 │   └── service/             ✅ ValuationService 🆕
 ├── analytics/               ✅ 성과 분석 🆕
 │   └── service/             ✅ PerformanceService 🆕
-├── backtest/                ⏸️ 미구현
+├── backtest/                ✅ 백테스트 🆕
+│   └── service/             ✅ BacktestService 🆕
+├── rebalance/               ✅ 리밸런싱 🆕
+│   └── service/             ✅ RebalanceService 🆕
 ├── common/                  ✅ 공통 유틸
 │   ├── exception/           ✅ ErrorCode, BusinessException
 │   └── util/                ✅ AssetClass 등
@@ -253,6 +259,7 @@ frontend/src/
 │   ├── portfolioGroup.ts    ✅ 그룹 API
 │   ├── transaction.ts       ✅ 거래 API 🆕
 │   ├── valuation.ts         ✅ 평가/성과 API 🆕
+│   ├── backtest.ts          ✅ 백테스트 API 🆕
 │   └── client.ts            ✅ Axios 설정
 ├── components/              ✅ 컴포넌트
 │   ├── layout/              ✅ 레이아웃
@@ -266,7 +273,8 @@ frontend/src/
 │       ├── TargetWeights    ✅ 목표 비중 설정
 │       ├── TransactionList  ✅ 거래 목록 🆕
 │       ├── TransactionForm  ✅ 거래 입력 폼 🆕
-│       └── PerformanceChart ✅ 수익률 차트 (ECharts) 🆕
+│       ├── PerformanceChart ✅ 수익률 차트 (ECharts) 🆕
+│       └── RebalancePanel   ✅ 리밸런싱 패널 (도넛 차트, 매매 추천) 🆕
 ├── i18n/                    ✅ 다국어
 ├── locales/                 ✅ 번역 파일
 │   ├── ko.ts                ✅ 한국어 (거래/성과 용어 추가) 🆕
@@ -275,7 +283,7 @@ frontend/src/
 │   ├── auth.ts              ✅ 인증 Store
 │   ├── portfolio.ts         ✅ 포트폴리오 Store
 │   ├── valuation.ts         ✅ 평가/성과 Store 🆕
-│   └── backtest.ts          ⏸️ 미사용
+│   └── backtest.ts          ✅ 백테스트 Store 🆕
 ├── types/                   ✅ TypeScript 타입
 │   └── index.ts             ✅ PerformanceData, RiskMetrics 등 추가 🆕
 ├── views/                   ✅ 페이지
@@ -286,8 +294,8 @@ frontend/src/
 │   ├── portfolio/           ✅ 포트폴리오
 │   │   ├── NewPortfolioView ✅ 생성
 │   │   └── PortfolioDetailView ✅ 상세 (4개 탭 모두 동작) 🆕
-│   ├── compare/             ⏸️ 비교 (빈 페이지)
-│   └── backtest/            ⏸️ 백테스트 (빈 페이지)
+│   ├── compare/             ✅ CompareView (ECharts 비교 차트) 🆕
+│   └── backtest/            ✅ BacktestView, BacktestResultView 🆕
 └── utils/                   ✅ 유틸리티
     └── format.ts            ✅ 포맷팅 함수
 ```
@@ -328,10 +336,14 @@ frontend/src/
 
 ✅ GET    /api/v1/portfolios/{id}/valuation     평가액 조회 🆕
 ✅ GET    /api/v1/portfolios/{id}/performance   성과 조회 🆕
+✅ GET    /api/v1/portfolios/{id}/rebalance     리밸런싱 분석 🆕
 
-⏸️ POST   /api/v1/compare/performance         비교 분석
-⏸️ POST   /api/v1/backtests/runs              백테스트 실행
-⏸️ GET    /api/v1/backtests/runs/{id}/results 백테스트 결과
+✅ POST   /api/v1/compare/performance         비교 분석 🆕
+✅ POST   /api/v1/backtests/runs              백테스트 실행 🆕
+✅ GET    /api/v1/backtests/runs               백테스트 목록 🆕
+✅ GET    /api/v1/backtests/runs/{id}          백테스트 상태 🆕
+✅ GET    /api/v1/backtests/runs/{id}/results  백테스트 결과 🆕
+✅ DELETE /api/v1/backtests/runs/{id}          백테스트 삭제 🆕
 ```
 
 ---

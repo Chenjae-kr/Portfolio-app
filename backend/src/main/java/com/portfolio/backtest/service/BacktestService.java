@@ -138,15 +138,20 @@ public class BacktestService {
             throw new IllegalArgumentException("At least one target allocation required");
         }
 
+        // DCA 설정
+        boolean isDCA = "DCA".equals(config.getInvestmentType());
+        BigDecimal totalInvested = initialCapital != null ? initialCapital : BigDecimal.ZERO;
+
         // 포지션: instrumentId → 보유 수량
         Map<String, BigDecimal> positions = new LinkedHashMap<>();
-        BigDecimal cash = initialCapital;
+        BigDecimal cash = totalInvested;
 
         List<SeriesPoint> series = new ArrayList<>();
         List<TradeLog> tradeLogs = new ArrayList<>();
 
         LocalDate current = start;
         LocalDate lastRebalanceDate = null;
+        LocalDate lastDepositDate = null;
         boolean firstDay = true;
 
         while (!current.isAfter(end)) {
@@ -166,19 +171,42 @@ public class BacktestService {
 
             // 첫 거래일: 초기 배분
             if (firstDay) {
-                cash = executeTrades(targetAllocs, positions, cash, prices, tradeLogs, current);
+                if (cash.compareTo(BigDecimal.ZERO) > 0) {
+                    cash = executeTrades(targetAllocs, positions, cash, prices, tradeLogs, current);
+                }
                 firstDay = false;
                 lastRebalanceDate = current;
+                lastDepositDate = current;
             } else {
+                // DCA 입금 체크
+                boolean deposited = false;
+                if (isDCA && config.getDcaAmount() != null
+                        && config.getDcaAmount().compareTo(BigDecimal.ZERO) > 0) {
+                    if (isDepositDue(current, lastDepositDate, config.getDcaFrequency())) {
+                        cash = cash.add(config.getDcaAmount());
+                        totalInvested = totalInvested.add(config.getDcaAmount());
+                        lastDepositDate = current;
+                        deposited = true;
+
+                        TradeLog depositLog = new TradeLog();
+                        depositLog.setTs(current.toString());
+                        depositLog.setAction("DEPOSIT");
+                        depositLog.setAmount(config.getDcaAmount().setScale(2, RoundingMode.HALF_UP));
+                        tradeLogs.add(depositLog);
+                    }
+                }
+
                 // 리밸런싱 체크
                 boolean shouldRebalance = shouldRebalance(
                         config.getRebalanceType(), config.getRebalancePeriod(),
                         config.getBandThreshold(), current, lastRebalanceDate,
                         targetAllocs, positions, cash, prices);
 
-                if (shouldRebalance) {
+                if (shouldRebalance || deposited) {
                     cash = executeTrades(targetAllocs, positions, cash, prices, tradeLogs, current);
-                    lastRebalanceDate = current;
+                    if (shouldRebalance) {
+                        lastRebalanceDate = current;
+                    }
                 }
             }
 
@@ -207,13 +235,14 @@ public class BacktestService {
             point.setEquityCurveBase(totalValue.setScale(2, RoundingMode.HALF_UP));
             point.setDrawdown(drawdown);
             point.setCashBase(cash.setScale(2, RoundingMode.HALF_UP));
+            point.setTotalInvested(totalInvested.setScale(2, RoundingMode.HALF_UP));
             series.add(point);
 
             current = current.plusDays(1);
         }
 
         // 통계 계산
-        PerformanceStats stats = calculateStats(series, initialCapital);
+        PerformanceStats stats = calculateStats(series, initialCapital, totalInvested, isDCA);
 
         BacktestResult result = new BacktestResult();
         BacktestRun run = getRun(runId);
@@ -335,6 +364,15 @@ public class BacktestService {
         return false;
     }
 
+    /**
+     * DCA 입금일 여부 확인 (주기 판정은 isRebalanceDue와 동일)
+     */
+    private boolean isDepositDue(LocalDate current, LocalDate lastDeposit, String frequency) {
+        if (lastDeposit == null) return true;
+        if (frequency == null) frequency = "MONTHLY";
+        return isRebalanceDue(current, lastDeposit, frequency);
+    }
+
     private boolean isRebalanceDue(LocalDate current, LocalDate lastRebalance, String period) {
         return switch (period) {
             case "MONTHLY" -> !current.getMonth().equals(lastRebalance.getMonth())
@@ -382,31 +420,69 @@ public class BacktestService {
 
     /**
      * 성과 통계 계산
+     * DCA 모드에서는 TWR(Time-Weighted Return) 기반 CAGR을 사용하여
+     * 현금 흐름의 영향을 제거한 순수 투자 성과를 측정
      */
-    private PerformanceStats calculateStats(List<SeriesPoint> series, BigDecimal initialCapital) {
+    private PerformanceStats calculateStats(List<SeriesPoint> series,
+                                            BigDecimal initialCapital,
+                                            BigDecimal totalInvested,
+                                            boolean isDCA) {
         PerformanceStats stats = new PerformanceStats();
+        stats.setTotalInvested(totalInvested);
 
         if (series.size() < 2) return stats;
 
         BigDecimal finalValue = series.get(series.size() - 1).getEquityCurveBase();
 
-        // 총 수익률
-        if (initialCapital.compareTo(BigDecimal.ZERO) > 0) {
-            double totalReturn = finalValue.subtract(initialCapital)
-                    .divide(initialCapital, 10, RoundingMode.HALF_UP).doubleValue();
+        if (!isDCA) {
+            // LUMP_SUM: 기존 로직
+            if (initialCapital != null && initialCapital.compareTo(BigDecimal.ZERO) > 0) {
+                double totalReturn = finalValue.subtract(initialCapital)
+                        .divide(initialCapital, 10, RoundingMode.HALF_UP).doubleValue();
 
-            // CAGR
+                int tradingDays = series.size();
+                double years = (double) tradingDays / 252.0;
+                double cagr = years > 0 ? Math.pow(1.0 + totalReturn, 1.0 / years) - 1.0 : 0;
+                stats.setCagr(BigDecimal.valueOf(cagr).setScale(SCALE, RoundingMode.HALF_UP));
+            }
+        } else {
+            // DCA: TWR (Time-Weighted Return) 기반 CAGR
+            double twrProduct = 1.0;
+            for (int i = 1; i < series.size(); i++) {
+                BigDecimal prevEquity = series.get(i - 1).getEquityCurveBase();
+                BigDecimal currEquity = series.get(i).getEquityCurveBase();
+                BigDecimal prevInvested = series.get(i - 1).getTotalInvested();
+                BigDecimal currInvested = series.get(i).getTotalInvested();
+
+                // 당일 입금액 감지
+                BigDecimal depositOnDay = currInvested.subtract(prevInvested);
+                BigDecimal adjustedPrev = prevEquity.add(depositOnDay);
+
+                if (adjustedPrev.compareTo(BigDecimal.ZERO) > 0) {
+                    double dailyReturn = currEquity.subtract(adjustedPrev)
+                            .divide(adjustedPrev, 10, RoundingMode.HALF_UP).doubleValue();
+                    twrProduct *= (1.0 + dailyReturn);
+                }
+            }
+
             int tradingDays = series.size();
             double years = (double) tradingDays / 252.0;
-            double cagr = years > 0 ? Math.pow(1.0 + totalReturn, 1.0 / years) - 1.0 : 0;
+            double cagr = years > 0 ? Math.pow(twrProduct, 1.0 / years) - 1.0 : 0;
             stats.setCagr(BigDecimal.valueOf(cagr).setScale(SCALE, RoundingMode.HALF_UP));
         }
 
-        // 일별 수익률
+        // 일별 수익률 (DCA에서는 입금 효과 제거)
         List<Double> dailyReturns = new ArrayList<>();
         for (int i = 1; i < series.size(); i++) {
             BigDecimal prev = series.get(i - 1).getEquityCurveBase();
             BigDecimal curr = series.get(i).getEquityCurveBase();
+
+            if (isDCA) {
+                BigDecimal deposit = series.get(i).getTotalInvested()
+                        .subtract(series.get(i - 1).getTotalInvested());
+                prev = prev.add(deposit);
+            }
+
             if (prev.compareTo(BigDecimal.ZERO) > 0) {
                 dailyReturns.add(curr.subtract(prev).divide(prev, 10, RoundingMode.HALF_UP).doubleValue());
             }
@@ -459,6 +535,9 @@ public class BacktestService {
         private BigDecimal bandThreshold;                 // BAND 리밸런싱 임계값
         private boolean dividendReinvest = true;
         private String priceMode = "ADJ_CLOSE";
+        private String investmentType = "LUMP_SUM";      // LUMP_SUM, DCA
+        private BigDecimal dcaAmount;                     // 적립식 투자 금액
+        private String dcaFrequency;                      // MONTHLY, QUARTERLY, SEMI_ANNUAL, ANNUAL
         private List<TargetAlloc> targets = new ArrayList<>();
     }
 
@@ -493,6 +572,7 @@ public class BacktestService {
         private BigDecimal equityCurveBase;
         private BigDecimal drawdown;
         private BigDecimal cashBase;
+        private BigDecimal totalInvested;
     }
 
     @Data
@@ -505,15 +585,17 @@ public class BacktestService {
         private BigDecimal sharpe;
         private BigDecimal beta;
         private BigDecimal trackingError;
+        private BigDecimal totalInvested;
     }
 
     @Data
     public static class TradeLog {
         private String ts;
         private String instrumentId;
-        private String action;     // BUY, SELL
+        private String action;     // BUY, SELL, DEPOSIT
         private BigDecimal quantity;
         private BigDecimal price;
         private BigDecimal fee;
+        private BigDecimal amount;  // DEPOSIT 이벤트용 입금 금액
     }
 }

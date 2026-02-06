@@ -41,12 +41,22 @@ onMounted(async () => {
 
 const result = computed(() => backtestStore.currentResult);
 
+const totalReturnPercent = computed(() => {
+  if (!result.value?.stats?.totalInvested || !result.value?.series?.length) return null;
+  const finalValue = result.value.series[result.value.series.length - 1].equityCurveBase;
+  const invested = result.value.stats.totalInvested;
+  if (invested === 0) return null;
+  return (finalValue - invested) / invested;
+});
+
 const equityChartOption = computed(() => {
   if (!result.value?.series?.length) return null;
 
   const dates = result.value.series.map((p: any) => p.ts);
   const equity = result.value.series.map((p: any) => p.equityCurveBase);
   const cash = result.value.series.map((p: any) => p.cashBase);
+  const invested = result.value.series.map((p: any) => p.totalInvested);
+  const hasDCA = invested.some((v: any, i: number) => i > 0 && v !== invested[0]);
 
   return {
     tooltip: {
@@ -68,7 +78,7 @@ const equityChartOption = computed(() => {
       borderColor: '#e5e7eb',
     },
     legend: {
-      data: [t('backtest.equityCurve'), t('backtest.cashBalance')],
+      data: [t('backtest.equityCurve'), ...(hasDCA ? [t('backtest.totalInvestedLine')] : []), t('backtest.cashBalance')],
       bottom: 0,
       textStyle: { color: '#6b7280', fontSize: 12 },
     },
@@ -121,6 +131,15 @@ const equityChartOption = computed(() => {
         },
         itemStyle: { color: '#6366f1' },
       },
+      ...(hasDCA ? [{
+        name: t('backtest.totalInvestedLine'),
+        type: 'line',
+        data: invested,
+        smooth: false,
+        symbol: 'none',
+        lineStyle: { width: 1.5, color: '#f59e0b', type: 'dashed' },
+        itemStyle: { color: '#f59e0b' },
+      }] : []),
       {
         name: t('backtest.cashBalance'),
         type: 'line',
@@ -228,6 +247,18 @@ const drawdownChartOption = computed(() => {
                 : '-' }}
             </span>
           </div>
+          <div class="summary-card" v-if="result.stats?.totalInvested">
+            <span class="label">{{ t('backtest.totalInvested') }}</span>
+            <span class="value">
+              {{ formatCurrency(result.stats.totalInvested, 'KRW') }}
+            </span>
+          </div>
+          <div class="summary-card" v-if="totalReturnPercent != null">
+            <span class="label">{{ t('backtest.totalReturn') }}</span>
+            <span class="value" :class="totalReturnPercent >= 0 ? 'number-positive' : 'number-negative'">
+              {{ formatPercent(totalReturnPercent, 2, true) }}
+            </span>
+          </div>
           <div class="summary-card">
             <span class="label">{{ t('performance.cagr') }}</span>
             <span class="value" :class="result.stats?.cagr && result.stats.cagr > 0 ? 'number-positive' : 'number-negative'">
@@ -285,15 +316,27 @@ const drawdownChartOption = computed(() => {
             <tbody>
               <tr v-for="(trade, index) in (result.tradeLogs || []).slice(0, 50)" :key="index">
                 <td>{{ formatDate(trade.ts) }}</td>
-                <td class="font-mono">{{ trade.instrumentId }}</td>
+                <td class="font-mono">{{ trade.instrumentId || '-' }}</td>
                 <td>
-                  <span class="badge" :class="trade.action === 'BUY' ? 'badge-success' : 'badge-danger'">
-                    {{ trade.action }}
+                  <span class="badge" :class="{
+                    'badge-success': trade.action === 'BUY',
+                    'badge-danger': trade.action === 'SELL',
+                    'badge-info': trade.action === 'DEPOSIT',
+                  }">
+                    {{ trade.action === 'DEPOSIT' ? t('backtest.deposit') : trade.action }}
                   </span>
                 </td>
-                <td class="text-right font-mono">{{ formatNumber(trade.quantity, 4) }}</td>
-                <td class="text-right font-mono">{{ formatCurrency(trade.price, 'KRW') }}</td>
-                <td class="text-right font-mono">{{ formatCurrency(trade.fee, 'KRW') }}</td>
+                <td class="text-right font-mono">
+                  {{ trade.action === 'DEPOSIT' ? '-' : formatNumber(trade.quantity, 4) }}
+                </td>
+                <td class="text-right font-mono">
+                  {{ trade.action === 'DEPOSIT' ? '-' : formatCurrency(trade.price, 'KRW') }}
+                </td>
+                <td class="text-right font-mono">
+                  {{ trade.action === 'DEPOSIT'
+                    ? formatCurrency(trade.amount, 'KRW')
+                    : formatCurrency(trade.fee, 'KRW') }}
+                </td>
               </tr>
             </tbody>
           </table>
@@ -398,6 +441,11 @@ const drawdownChartOption = computed(() => {
 .font-mono {
   font-family: var(--font-mono);
   font-size: 13px;
+}
+
+.badge-info {
+  background-color: #dbeafe;
+  color: #2563eb;
 }
 
 .more-hint {

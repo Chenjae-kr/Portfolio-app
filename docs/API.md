@@ -16,7 +16,8 @@
 7. [포트폴리오 목표 비중 API](#-포트폴리오-목표-비중-api-portfolio-targets)
 8. [금융상품 API](#-금융상품-api-instruments)
 9. [포트폴리오 그룹 API](#-포트폴리오-그룹-api-portfolio-groups)
-10. [향후 추가 예정 API](#-향후-추가-예정-api)
+10. [구현된 추가 API](#-구현된-추가-api-상세는-progressmd-참고)
+11. [향후 추가 예정 API](#-향후-추가-예정-api)
 
 ---
 
@@ -924,44 +925,41 @@ GET /v1/instruments/search?q=Vanguard&assetClass=EQUITY&page=0&size=10
 
 ---
 
+## ✅ 구현된 추가 API (상세는 PROGRESS.md 참고)
+
+다음 API들은 이미 구현되어 있습니다. 요청/응답 상세는 Swagger UI (`/api/swagger-ui.html`) 또는 [PROGRESS.md](PROGRESS.md) 엔드포인트 현황을 참고하세요.
+
+### Transaction (거래) ✅
+
+- `POST /v1/portfolios/{id}/transactions` - 거래 생성
+- `GET /v1/portfolios/{id}/transactions` - 거래 내역 조회
+- `GET /v1/transactions/{id}` - 거래 상세 조회
+- `POST /v1/transactions/{id}/void` - 거래 취소
+
+### Valuation & Performance (평가·성과) ✅
+
+- `GET /v1/portfolios/{id}/valuation` - 포트폴리오 평가액 조회
+- `GET /v1/portfolios/{id}/performance` - 성과 지표 조회 (TWR, CAGR, Volatility, MDD, Sharpe)
+
+### Compare (포트폴리오 비교) ✅
+
+- `POST /v1/compare/performance` - 다중 포트폴리오 성과 비교
+
+### Backtest (백테스트) ✅
+
+- `POST /v1/backtests/runs` - 백테스트 실행
+- `GET /v1/backtests/runs` - 백테스트 목록 조회
+- `GET /v1/backtests/runs/{id}` - 백테스트 상태 조회
+- `GET /v1/backtests/runs/{id}/results` - 백테스트 결과 조회
+- `DELETE /v1/backtests/runs/{id}` - 백테스트 삭제
+
+### Rebalance (리밸런싱) ✅
+
+- `GET /v1/portfolios/{id}/rebalance` - 현재 vs 목표 비중 및 매매 추천
+
+---
+
 ## 🚧 향후 추가 예정 API
-
-다음 API들이 개발 예정입니다:
-
-### Transaction (거래)
-
-```
-POST   /v1/portfolios/{id}/transactions       # 거래 생성
-GET    /v1/portfolios/{id}/transactions       # 거래 내역 조회
-GET    /v1/transactions/{id}                  # 거래 상세 조회
-POST   /v1/transactions/{id}/void             # 거래 취소
-```
-
-### Valuation (평가)
-
-```
-GET    /v1/portfolios/{id}/valuation          # 포트폴리오 평가액 조회
-GET    /v1/portfolios/{id}/positions          # 포지션 목록 조회
-GET    /v1/portfolios/{id}/positions/{instId} # 포지션 상세 조회
-```
-
-### Performance (성과 분석)
-
-```
-GET    /v1/portfolios/{id}/performance        # 성과 지표 조회
-POST   /v1/compare/performance                # 포트폴리오 비교
-GET    /v1/portfolios/{id}/risk-metrics       # 리스크 지표 조회
-```
-
-### Backtest (백테스트)
-
-```
-POST   /v1/backtests/runs                     # 백테스트 실행
-GET    /v1/backtests/runs                     # 백테스트 목록 조회
-GET    /v1/backtests/runs/{id}                # 백테스트 상태 조회
-GET    /v1/backtests/runs/{id}/results        # 백테스트 결과 조회
-DELETE /v1/backtests/runs/{id}                # 백테스트 삭제
-```
 
 ### Price Data (가격 데이터)
 
@@ -1123,16 +1121,22 @@ curl -X PUT "http://localhost:8080/api/v1/portfolios/{portfolio-id}/targets?norm
 
 ## 🔄 버전 변경 이력
 
-### v1.0.0 (Current)
+### v1.1.0 (Current)
+- 거래 API (생성/조회/취소)
+- 평가·성과 API (valuation, performance)
+- 포트폴리오 비교 API (compare/performance)
+- 백테스트 API (runs, results)
+- 리밸런싱 API (portfolios/{id}/rebalance)
+
+### v1.0.0
 - 인증 API (Login, Register, Refresh, Logout)
-- 포트폴리오 CRUD
-- 포트폴리오 목표 비중 설정
+- 포트폴리오 CRUD 및 목표 비중 설정
 - 금융상품 검색 및 조회
 - 포트폴리오 그룹 관리
 
 ---
 
-**문서 버전:** 1.0.0  
+**문서 버전:** 1.1.0  
 **최종 업데이트:** 2026-02-06  
 **API 버전:** v1  
 

@@ -114,11 +114,12 @@ public class ValuationService {
 
         BigDecimal totalValue = totalAssetValue.add(cashBalance);
 
-        // 비중 계산
+        // 비중 계산 (자산 시가 총합 기반 - 음수 총가치 방지)
+        BigDecimal weightBase = totalAssetValue.abs().compareTo(BigDecimal.ZERO) > 0
+                ? totalAssetValue.abs()
+                : BigDecimal.ONE;
         for (PositionValuation pv : positions) {
-            pv.weight = totalValue.compareTo(BigDecimal.ZERO) > 0
-                    ? pv.marketValueBase.divide(totalValue, 6, RoundingMode.HALF_UP)
-                    : BigDecimal.ZERO;
+            pv.weight = pv.marketValueBase.abs().divide(weightBase, 6, RoundingMode.HALF_UP);
         }
 
         // 전체 손익

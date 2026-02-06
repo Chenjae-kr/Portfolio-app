@@ -13,6 +13,8 @@ export default {
     success: 'Success',
     confirm: 'Confirm',
     retry: 'Retry',
+    saving: 'Saving...',
+    actions: 'Actions',
   },
   nav: {
     dashboard: 'Dashboard',

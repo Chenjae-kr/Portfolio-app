@@ -2,10 +2,12 @@ package com.portfolio.api;
 
 import com.portfolio.common.exception.BusinessException;
 import com.portfolio.common.util.AssetClass;
-import com.portfolio.infra.init.DataInitializer;
+import com.portfolio.common.util.SecurityUtils;
 import com.portfolio.portfolio.entity.Portfolio;
 import com.portfolio.portfolio.entity.PortfolioTarget;
 import com.portfolio.portfolio.service.PortfolioService;
+import com.portfolio.pricing.entity.Instrument;
+import com.portfolio.pricing.repository.InstrumentRepository;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,15 +26,15 @@ import java.util.stream.Collectors;
 public class PortfolioController {
 
     private final PortfolioService portfolioService;
-
-    // 개발 모드: 임시 workspace ID (실제로는 인증된 사용자의 workspace에서 가져와야 함)
-    private static final String DEFAULT_WORKSPACE_ID = DataInitializer.DEFAULT_WORKSPACE_ID;
+    private final SecurityUtils securityUtils;
+    private final InstrumentRepository instrumentRepository;
 
     @GetMapping
     public ResponseEntity<?> listPortfolios() {
         try {
-            List<Portfolio> portfolios = portfolioService.findAll(DEFAULT_WORKSPACE_ID);
-            
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
+            List<Portfolio> portfolios = portfolioService.findAll(workspaceId);
+
             List<Map<String, Object>> portfolioList = portfolios.stream()
                     .map(this::toPortfolioDto)
                     .collect(Collectors.toList());
@@ -51,7 +53,8 @@ public class PortfolioController {
     @GetMapping("/{id}")
     public ResponseEntity<?> getPortfolio(@PathVariable String id) {
         try {
-            Portfolio portfolio = portfolioService.findById(id, DEFAULT_WORKSPACE_ID);
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
+            Portfolio portfolio = portfolioService.findById(id, workspaceId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("data", toPortfolioDto(portfolio));
@@ -69,8 +72,9 @@ public class PortfolioController {
     @PostMapping
     public ResponseEntity<?> createPortfolio(@RequestBody CreatePortfolioRequest request) {
         try {
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
             Portfolio portfolio = portfolioService.create(
-                    DEFAULT_WORKSPACE_ID,
+                    workspaceId,
                     request.getName(),
                     request.getDescription(),
                     request.getBaseCurrency(),
@@ -91,12 +95,13 @@ public class PortfolioController {
     }
 
     @PatchMapping("/{id}")
-    public ResponseEntity<?> updatePortfolio(@PathVariable String id, 
+    public ResponseEntity<?> updatePortfolio(@PathVariable String id,
                                             @RequestBody UpdatePortfolioRequest request) {
         try {
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
             Portfolio portfolio = portfolioService.update(
                     id,
-                    DEFAULT_WORKSPACE_ID,
+                    workspaceId,
                     request.getName(),
                     request.getDescription()
             );
@@ -117,7 +122,8 @@ public class PortfolioController {
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deletePortfolio(@PathVariable String id) {
         try {
-            portfolioService.delete(id, DEFAULT_WORKSPACE_ID);
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
+            portfolioService.delete(id, workspaceId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("data", Map.of("message", "Portfolio archived successfully"));
@@ -158,21 +164,34 @@ public class PortfolioController {
     }
 
     // ===== Portfolio Targets =====
-    
+
     @GetMapping("/{id}/targets")
     public ResponseEntity<?> getTargets(@PathVariable String id) {
         try {
-            List<PortfolioTarget> targets = portfolioService.getTargets(id, DEFAULT_WORKSPACE_ID);
-            
-            List<Map<String, Object>> targetList = targets.stream()
-                    .map(this::toTargetDto)
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
+            List<PortfolioTarget> targets = portfolioService.getTargets(id, workspaceId);
+
+            // Batch lookup instruments
+            List<String> instrumentIds = targets.stream()
+                    .map(PortfolioTarget::getInstrumentId)
+                    .filter(iid -> iid != null && !iid.isBlank())
+                    .distinct()
                     .collect(Collectors.toList());
-            
+            Map<String, Instrument> instrumentMap = new HashMap<>();
+            if (!instrumentIds.isEmpty()) {
+                instrumentRepository.findByIdIn(instrumentIds)
+                        .forEach(inst -> instrumentMap.put(inst.getId(), inst));
+            }
+
+            List<Map<String, Object>> targetList = targets.stream()
+                    .map(t -> toTargetDto(t, instrumentMap))
+                    .collect(Collectors.toList());
+
             Map<String, Object> response = new HashMap<>();
             response.put("data", targetList);
             response.put("meta", Map.of("timestamp", java.time.Instant.now().toString()));
             response.put("error", null);
-            
+
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {
             return createErrorResponse(e.getMessage(), HttpStatus.NOT_FOUND);
@@ -180,7 +199,7 @@ public class PortfolioController {
             return createErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    
+
     @PutMapping("/{id}/targets")
     public ResponseEntity<?> updateTargets(
             @PathVariable String id,
@@ -188,11 +207,12 @@ public class PortfolioController {
             @RequestBody UpdateTargetsRequest request
     ) {
         try {
+            String workspaceId = securityUtils.getCurrentWorkspaceId();
             List<PortfolioTarget> targets = request.getTargets().stream()
                     .map(dto -> {
                         PortfolioTarget target = new PortfolioTarget();
                         target.setInstrumentId(dto.getInstrumentId());
-                        target.setAssetClass(dto.getAssetClass() != null ? 
+                        target.setAssetClass(dto.getAssetClass() != null ?
                                 AssetClass.valueOf(dto.getAssetClass()) : AssetClass.EQUITY);
                         target.setCurrency(dto.getCurrency());
                         target.setTargetWeight(dto.getTargetWeight());
@@ -201,19 +221,31 @@ public class PortfolioController {
                         return target;
                     })
                     .collect(Collectors.toList());
-            
+
             List<PortfolioTarget> savedTargets = portfolioService.updateTargets(
-                    id, DEFAULT_WORKSPACE_ID, targets, normalize);
-            
-            List<Map<String, Object>> targetList = savedTargets.stream()
-                    .map(this::toTargetDto)
+                    id, workspaceId, targets, normalize);
+
+            // Batch lookup instruments for saved targets
+            List<String> savedInstrumentIds = savedTargets.stream()
+                    .map(PortfolioTarget::getInstrumentId)
+                    .filter(iid -> iid != null && !iid.isBlank())
+                    .distinct()
                     .collect(Collectors.toList());
-            
+            Map<String, Instrument> savedInstrumentMap = new HashMap<>();
+            if (!savedInstrumentIds.isEmpty()) {
+                instrumentRepository.findByIdIn(savedInstrumentIds)
+                        .forEach(inst -> savedInstrumentMap.put(inst.getId(), inst));
+            }
+
+            List<Map<String, Object>> targetList = savedTargets.stream()
+                    .map(t -> toTargetDto(t, savedInstrumentMap))
+                    .collect(Collectors.toList());
+
             Map<String, Object> response = new HashMap<>();
             response.put("data", targetList);
             response.put("meta", Map.of("timestamp", java.time.Instant.now().toString()));
             response.put("error", null);
-            
+
             return ResponseEntity.ok(response);
         } catch (BusinessException e) {
             return createErrorResponse(e.getMessage(), e.getErrorCode().getHttpStatus());
@@ -223,8 +255,8 @@ public class PortfolioController {
             return createErrorResponse(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
-    
-    private Map<String, Object> toTargetDto(PortfolioTarget target) {
+
+    private Map<String, Object> toTargetDto(PortfolioTarget target, Map<String, Instrument> instrumentMap) {
         Map<String, Object> dto = new HashMap<>();
         dto.put("id", target.getId());
         dto.put("instrumentId", target.getInstrumentId());
@@ -234,6 +266,16 @@ public class PortfolioController {
         dto.put("minWeight", target.getMinWeight());
         dto.put("maxWeight", target.getMaxWeight());
         dto.put("updatedAt", target.getUpdatedAt().toString());
+
+        // Add instrument ticker and name
+        if (target.getInstrumentId() != null) {
+            Instrument inst = instrumentMap.get(target.getInstrumentId());
+            if (inst != null) {
+                dto.put("ticker", inst.getTicker());
+                dto.put("instrumentName", inst.getName());
+            }
+        }
+
         return dto;
     }
 
@@ -250,12 +292,12 @@ public class PortfolioController {
         private String name;
         private String description;
     }
-    
+
     @Data
     public static class UpdateTargetsRequest {
         private List<TargetDto> targets;
     }
-    
+
     @Data
     public static class TargetDto {
         private String instrumentId;

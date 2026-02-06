@@ -248,7 +248,7 @@ function navigateToPortfolio(id: string) {
               <td class="text-muted">{{ formatDate(tx.occurredAt) }}</td>
               <td>{{ tx.portfolioName }}</td>
               <td><span class="type-badge" :class="getTypeBadgeClass(tx.type)">{{ typeLabels[tx.type] || tx.type }}</span></td>
-              <td>{{ getMainLeg(tx)?.instrumentId || '-' }}</td>
+              <td>{{ getMainLeg(tx)?.ticker || getMainLeg(tx)?.instrumentName || '-' }}</td>
               <td class="text-right font-mono">
                 {{ formatCurrency(Math.abs(getMainLeg(tx)?.amount || 0), 'KRW') }}
               </td>

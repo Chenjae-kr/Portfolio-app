@@ -193,7 +193,7 @@ onMounted(() => {
                   placeholder="Cash"
                   class="input-sm"
                 />
-                <span v-else>{{ target.instrumentId }}</span>
+                <span v-else>{{ target.ticker || target.instrumentName || target.instrumentId }}</span>
               </td>
               <td>
                 <select v-model="target.assetClass" class="select-sm">

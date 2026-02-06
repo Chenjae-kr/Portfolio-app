@@ -48,6 +48,8 @@ export interface Portfolio {
 export interface PortfolioTarget {
   id: string;
   instrumentId?: string;
+  ticker?: string;
+  instrumentName?: string;
   assetClass: AssetClass;
   currency?: string;
   targetWeight: number;
@@ -92,6 +94,8 @@ export interface TransactionLeg {
   id?: string;
   legType: LegType;
   instrumentId?: string;
+  ticker?: string;
+  instrumentName?: string;
   currency: string;
   quantity?: number;
   price?: number;

@@ -13,6 +13,8 @@ export default {
     success: '성공',
     confirm: '확인',
     retry: '다시 시도',
+    saving: '저장 중...',
+    actions: '작업',
   },
   nav: {
     dashboard: '대시보드',

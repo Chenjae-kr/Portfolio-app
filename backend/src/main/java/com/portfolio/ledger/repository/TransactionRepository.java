@@ -35,14 +35,38 @@ public interface TransactionRepository extends JpaRepository<Transaction, String
     @Query("SELECT DISTINCT t FROM Transaction t LEFT JOIN FETCH t.legs " +
             "WHERE t.portfolioId = :portfolioId " +
             "AND t.status <> :status " +
-            "AND (:type IS NULL OR t.type = :type) " +
-            "AND (:from IS NULL OR t.occurredAt >= :from) " +
-            "AND (:to IS NULL OR t.occurredAt <= :to) " +
+            "AND t.type = :type " +
+            "AND t.occurredAt >= :from " +
+            "AND t.occurredAt <= :to " +
             "ORDER BY t.occurredAt DESC")
-    List<Transaction> findByPortfolioIdWithLegsAndFilters(
+    List<Transaction> findByPortfolioIdWithLegsAndAllFilters(
             @Param("portfolioId") String portfolioId,
             @Param("status") Transaction.TransactionStatus status,
             @Param("type") Transaction.TransactionType type,
+            @Param("from") LocalDateTime from,
+            @Param("to") LocalDateTime to
+    );
+
+    @Query("SELECT DISTINCT t FROM Transaction t LEFT JOIN FETCH t.legs " +
+            "WHERE t.portfolioId = :portfolioId " +
+            "AND t.status <> :status " +
+            "AND t.type = :type " +
+            "ORDER BY t.occurredAt DESC")
+    List<Transaction> findByPortfolioIdWithLegsAndTypeFilter(
+            @Param("portfolioId") String portfolioId,
+            @Param("status") Transaction.TransactionStatus status,
+            @Param("type") Transaction.TransactionType type
+    );
+
+    @Query("SELECT DISTINCT t FROM Transaction t LEFT JOIN FETCH t.legs " +
+            "WHERE t.portfolioId = :portfolioId " +
+            "AND t.status <> :status " +
+            "AND t.occurredAt >= :from " +
+            "AND t.occurredAt <= :to " +
+            "ORDER BY t.occurredAt DESC")
+    List<Transaction> findByPortfolioIdWithLegsAndDateFilter(
+            @Param("portfolioId") String portfolioId,
+            @Param("status") Transaction.TransactionStatus status,
             @Param("from") LocalDateTime from,
             @Param("to") LocalDateTime to
     );

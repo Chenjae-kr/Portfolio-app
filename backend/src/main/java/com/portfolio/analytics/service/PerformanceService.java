@@ -68,6 +68,7 @@ public class PerformanceService {
         result.frequency = frequency;
         result.dataPoints = resampled;
         result.stats = riskMetrics;
+        result.benchmarks = generateBenchmarks(from, to);
 
         return result;
     }
@@ -270,6 +271,87 @@ public class PerformanceService {
         return date.getYear() + "-" + String.format("%02d", date.getMonthValue());
     }
 
+    /**
+     * Mock 벤치마크 수익률 생성 (결정론적 시뮬레이션)
+     */
+    private List<BenchmarkSeries> generateBenchmarks(LocalDate from, LocalDate to) {
+        List<BenchmarkSeries> benchmarks = new ArrayList<>();
+        benchmarks.add(generateSingleBenchmark("KOSPI", "KOSPI 200", from, to, 0.08, 0.18));
+        benchmarks.add(generateSingleBenchmark("SP500", "S&P 500", from, to, 0.10, 0.15));
+        return benchmarks;
+    }
+
+    private BenchmarkSeries generateSingleBenchmark(String id, String label,
+            LocalDate from, LocalDate to, double annualReturn, double annualVol) {
+        BenchmarkSeries series = new BenchmarkSeries();
+        series.id = id;
+        series.label = label;
+
+        double dailyReturn = Math.pow(1 + annualReturn, 1.0 / TRADING_DAYS_PER_YEAR) - 1;
+        double dailyVol = annualVol / Math.sqrt(TRADING_DAYS_PER_YEAR);
+
+        List<DataPoint> points = new ArrayList<>();
+        double cumulative = 1.0;
+
+        DataPoint first = new DataPoint();
+        first.date = from.toString();
+        first.value = BigDecimal.ZERO;
+        points.add(first);
+
+        LocalDate current = from.plusDays(1);
+        List<Double> dailyReturns = new ArrayList<>();
+
+        while (!current.isAfter(to)) {
+            if (current.getDayOfWeek().getValue() <= 5) {
+                int seed = Objects.hash(id, current.toString());
+                Random rng = new Random(seed);
+                double noise = rng.nextGaussian() * dailyVol;
+                double dayRet = dailyReturn + noise;
+                dailyReturns.add(dayRet);
+                cumulative *= (1 + dayRet);
+
+                DataPoint dp = new DataPoint();
+                dp.date = current.toString();
+                dp.value = BigDecimal.valueOf(cumulative - 1.0).setScale(6, RoundingMode.HALF_UP);
+                points.add(dp);
+            }
+            current = current.plusDays(1);
+        }
+
+        series.dataPoints = points;
+
+        // Calculate stats
+        RiskMetrics metrics = new RiskMetrics();
+        double totalRet = cumulative - 1.0;
+        metrics.totalReturn = BigDecimal.valueOf(totalRet).setScale(6, RoundingMode.HALF_UP);
+
+        int days = dailyReturns.size();
+        if (days > 0 && totalRet > -1.0) {
+            metrics.cagr = BigDecimal.valueOf(
+                    Math.pow(1 + totalRet, (double) TRADING_DAYS_PER_YEAR / days) - 1)
+                    .setScale(6, RoundingMode.HALF_UP);
+        }
+        metrics.volatility = BigDecimal.valueOf(annualVol).setScale(6, RoundingMode.HALF_UP);
+
+        double bmPeak = 0, maxDD = 0, cum = 1.0;
+        for (double r : dailyReturns) {
+            cum *= (1 + r);
+            if (cum > bmPeak) bmPeak = cum;
+            double dd = bmPeak > 0 ? (bmPeak - cum) / bmPeak : 0;
+            if (dd > maxDD) maxDD = dd;
+        }
+        metrics.mdd = BigDecimal.valueOf(maxDD).setScale(6, RoundingMode.HALF_UP);
+
+        if (annualVol > 0 && metrics.cagr != null) {
+            metrics.sharpe = BigDecimal.valueOf(
+                    (metrics.cagr.doubleValue() - RISK_FREE_RATE_ANNUAL.doubleValue()) / annualVol)
+                    .setScale(4, RoundingMode.HALF_UP);
+        }
+
+        series.stats = metrics;
+        return series;
+    }
+
     private PerformanceResult emptyResult(String portfolioId, LocalDate from, LocalDate to,
                                           String metric, String frequency) {
         PerformanceResult result = new PerformanceResult();
@@ -297,6 +379,14 @@ public class PerformanceService {
         public String to;
         public String metric;
         public String frequency;
+        public List<DataPoint> dataPoints;
+        public RiskMetrics stats;
+        public List<BenchmarkSeries> benchmarks;
+    }
+
+    public static class BenchmarkSeries {
+        public String id;
+        public String label;
         public List<DataPoint> dataPoints;
         public RiskMetrics stats;
     }

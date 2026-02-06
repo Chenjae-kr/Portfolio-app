@@ -93,6 +93,9 @@ public class ValuationController {
             data.put("frequency", result.frequency);
             data.put("dataPoints", result.dataPoints);
             data.put("stats", result.stats);
+            if (result.benchmarks != null) {
+                data.put("benchmarks", result.benchmarks);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("data", data);
@@ -112,6 +115,7 @@ public class ValuationController {
         dto.put("instrumentId", pv.instrumentId);
         dto.put("ticker", pv.ticker);
         dto.put("instrumentName", pv.instrumentName);
+        dto.put("assetClass", pv.assetClass);
         dto.put("quantity", pv.quantity);
         dto.put("avgCost", pv.avgCost);
         dto.put("marketPrice", pv.marketPrice);

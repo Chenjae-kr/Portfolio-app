@@ -14,6 +14,7 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 
 @Configuration
 @ConditionalOnProperty(name = "spring.data.redis.host", matchIfMissing = false)
+@org.springframework.context.annotation.Profile("!dev & !test")  // 개발/테스트 모드에서는 비활성화
 public class RedisConfig {
 
     @Bean

@@ -15,6 +15,7 @@ const i18n = createI18n({
 describe('LanguageSwitcher 컴포넌트', () => {
   beforeEach(() => {
     localStorage.clear();
+    i18n.global.locale.value = 'ko';
   });
 
   it('컴포넌트가 정상적으로 마운트됨', () => {

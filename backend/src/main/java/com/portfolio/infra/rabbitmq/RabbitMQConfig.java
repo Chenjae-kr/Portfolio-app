@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConditionalOnProperty(name = "spring.rabbitmq.host", matchIfMissing = false)
+@org.springframework.context.annotation.Profile("!dev & !test")  // 개발/테스트 모드에서는 비활성화
 public class RabbitMQConfig {
 
     @Value("${app.backtest.queue-name}")

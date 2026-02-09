@@ -151,13 +151,18 @@
 
 ---
 
-### 7. Rebalancing Tools ⏸️ 0%
+### 7. Rebalancing Tools ✅ 80%
 
-**⏸️ 미구현:**
-- [ ] 리밸런싱 시뮬레이션
-- [ ] 목표 비중 대비 현재 비중 비교
-- [ ] 매매 추천
-- [ ] 리밸런싱 UI
+**✅ 완료:**
+- [x] RebalancingService (현재 vs 목표 비중 비교)
+- [x] 리밸런싱 시뮬레이션 (매매 추천)
+- [x] RebalancingController (REST API)
+- [x] RebalancingView.vue (비중 비교 + 추천 UI)
+- [x] i18n 번역 (한국어/영어)
+
+**🚧 진행 필요:**
+- [ ] 리밸런싱 실행 (실제 거래 생성)
+- [ ] 거래 비용 시뮬레이션
 
 ---
 
@@ -447,28 +452,33 @@ frontend/src/
 
 ---
 
-### 4. Comparison Charts ⏸️ 0%
+### 4. Comparison Charts ✅ 80%
 
-- [ ] 비교 페이지 구현
-- [ ] 다중 포트폴리오 비교 차트
+- [x] 비교 페이지 구현 (CompareView.vue)
+- [x] 다중 포트폴리오 비교 차트 (ECharts)
+- [x] 성과 지표 비교 테이블
 - [ ] 벤치마크 비교
 
 ---
 
-### 5. Basic Backtesting ⏸️ 0%
+### 5. Basic Backtesting ✅ 80%
 
-- [ ] Backtest 설정 UI
-- [ ] 정적 배분 백테스트
-- [ ] 주기적 리밸런싱 백테스트
-- [ ] 결과 차트
+- [x] Backtest 설정 UI (BacktestView.vue)
+- [x] 정적 배분 백테스트
+- [x] 주기적 리밸런싱 백테스트
+- [x] 밴드 리밸런싱 백테스트
+- [x] 결과 차트 (BacktestResultView.vue)
+- [ ] RabbitMQ 비동기 처리
+- [ ] 배당 재투자 로직
 
 ---
 
-### 6. Rebalancing Tools ⏸️ 0%
+### 6. Rebalancing Tools ✅ 80%
 
-- [ ] 현재 vs 목표 비중 비교
-- [ ] 리밸런싱 시뮬레이션
-- [ ] 매매 추천
+- [x] 현재 vs 목표 비중 비교
+- [x] 리밸런싱 시뮬레이션
+- [x] 매매 추천
+- [ ] 리밸런싱 실행 (실제 거래 생성)
 
 ---
 
@@ -476,20 +486,17 @@ frontend/src/
 
 ### Backend
 
-1. **테스트 환경 Context 로딩 실패**
-   - Spring Security 설정 관련 Bean 의존성 이슈
-   - H2 환경에서 일부 Auto-configuration 충돌
-   - 우선순위: 🔴 High
+1. ~~**테스트 환경 Context 로딩 실패**~~ ✅ 해결됨
+   - TestConfig의 passwordEncoder 중복 Bean 제거로 해결
+   - BacktestService DCA 첫날 입금 로직 수정
 
 2. ~~**Workspace 외래 키 제약**~~ ✅ 해결됨
    - 회원가입 시 자동 생성으로 해결
 
 ### Frontend
 
-1. **테스트 Mock 설정 불완전**
-   - API mock 설정 미흡
-   - Store 테스트 실패 (8개)
-   - 우선순위: 🟡 Medium
+1. ~~**테스트 Mock 설정 불완전**~~ ✅ 해결됨
+   - API mock 경로, 로케일 기대값, defineExpose 등 수정 완료
 
 2. ~~**포트폴리오 상세 페이지 빈 상태**~~ ✅ 해결됨
    - Valuation API 구현으로 실제 데이터 표시
@@ -498,30 +505,25 @@ frontend/src/
 
 ## 📅 다음 단계 (Next Sprint)
 
-### 우선순위 1: Backtesting Engine 🔴
-
-1. [ ] Backtest Service (정적 배분 + 리밸런싱)
-2. [ ] RabbitMQ 비동기 처리
-3. [ ] Backtest 결과 API
-4. [ ] Backtest Studio UI
-
-### 우선순위 2: 비교 분석 🟡
-
-1. [ ] 다중 포트폴리오 비교 API
-2. [ ] 벤치마크 연동
-3. [ ] 비교 차트 UI (ECharts)
-
-### 우선순위 3: 가격 데이터 연동 🟡
+### 우선순위 1: 가격 데이터 연동 🔴
 
 1. [ ] 외부 API 연동 (Alpha Vantage / KRX)
 2. [ ] Redis 캐싱 구현
 3. [ ] 실시간 가격 업데이트
+4. [ ] 환율 변환 (multi-currency 평가)
 
-### 우선순위 4: 테스트 안정화 🟢
+### 우선순위 2: 테스트 안정화 🟡
 
-1. [ ] Backend 테스트 Context 로딩 수정
-2. [ ] Frontend Mock 설정 완성
+1. [x] Backend 테스트 Context 로딩 수정 (TestConfig Bean 충돌 해결)
+2. [x] Frontend Mock 설정 완성
 3. [ ] 테스트 커버리지 80% 목표
+
+### 우선순위 3: 고급 기능 🟢
+
+1. [ ] RabbitMQ 비동기 백테스트 처리
+2. [ ] 벤치마크 비교 (KOSPI, S&P500)
+3. [ ] 리밸런싱 실행 (실제 거래 생성)
+4. [ ] 월별 수익률 히트맵
 
 ---
 
@@ -639,11 +641,12 @@ frontend/src/
 - 가격 데이터: 0% → **40%** (Mock 구현)
 - 비교 차트: 0% → **80%** (신규)
 - 백테스팅: 0% → **80%** (신규)
-- 전체 진척률: 38% → **75%** (+37%p)
+- 리밸런싱: 0% → **80%** (신규)
+- 전체 진척률: 38% → **82%** (+44%p)
 - API 엔드포인트: 19개 → **35개** (+16개)
 
 ---
 
-**문서 버전:** 2.2.0  
-**마지막 업데이트:** 2026-02-06 (Sprint 1~6 완료)  
+**문서 버전:** 2.3.0
+**마지막 업데이트:** 2026-02-09 (기술 부채 해결 + 진척도 동기화)
 **작성자:** Development Team

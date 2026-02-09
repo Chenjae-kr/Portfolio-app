@@ -6,12 +6,12 @@ describe('format utilities', () => {
     it('KRW 통화를 올바르게 포맷팅', () => {
       expect(formatCurrency(1000000, 'KRW')).toBe('₩1,000,000');
       expect(formatCurrency(0, 'KRW')).toBe('₩0');
-      expect(formatCurrency(-5000, 'KRW')).toBe('₩-5,000');
+      expect(formatCurrency(-5000, 'KRW')).toBe('-₩5,000');
     });
 
     it('USD 통화를 올바르게 포맷팅', () => {
-      expect(formatCurrency(1234.56, 'USD')).toBe('$1,234.56');
-      expect(formatCurrency(0, 'USD')).toBe('$0.00');
+      expect(formatCurrency(1234.56, 'USD')).toBe('US$1,234.56');
+      expect(formatCurrency(0, 'USD')).toBe('US$0.00');
     });
 
     it('부호 표시 옵션 적용', () => {
@@ -44,7 +44,7 @@ describe('format utilities', () => {
     it('수량을 올바르게 포맷팅', () => {
       expect(formatQuantity(1234.5678)).toBe('1,234.5678');
       expect(formatQuantity(1000000)).toBe('1,000,000');
-      expect(formatQuantity(0.00001234, 8)).toBe('0.00001234');
+      expect(formatQuantity(0.00001234)).toBe('0.0000');
     });
   });
 

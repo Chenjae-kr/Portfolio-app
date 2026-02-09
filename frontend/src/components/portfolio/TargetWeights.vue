@@ -102,6 +102,8 @@ async function saveTargets() {
   }
 }
 
+defineExpose({ targets, totalWeight, isValid, normalize });
+
 onMounted(() => {
   fetchTargets();
 });

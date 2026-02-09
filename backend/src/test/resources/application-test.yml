@@ -20,6 +20,13 @@ spring:
   flyway:
     enabled: false
 
+  # 테스트 시 Redis/RabbitMQ 비활성화
+  data:
+    redis:
+      host:
+  rabbitmq:
+    host:
+
   # 테스트 시 자동 구성 제외
   autoconfigure:
     exclude:
@@ -35,6 +42,8 @@ app:
     secret: dGVzdC1zZWNyZXQta2V5LWZvci1qdW5pdC10ZXN0aW5nLXB1cnBvc2VzLW9ubHk=
     access-token-expiration: 3600000
     refresh-token-expiration: 604800000
+  backtest:
+    queue-name: backtest-jobs-test
 
 logging:
   level:

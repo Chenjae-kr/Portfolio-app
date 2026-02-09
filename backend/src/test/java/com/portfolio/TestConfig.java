@@ -1,15 +1,9 @@
 package com.portfolio;
 
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 
 @TestConfiguration
 public class TestConfig {
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+    // passwordEncoder는 SecurityConfig에서 제공하므로 중복 정의 제거
+    // Spring Boot 3.3+ 에서 BeanDefinitionOverrideException 방지
 }

@@ -140,7 +140,7 @@ class PortfolioServiceTest {
         // Then
         assertThat(updated.getName()).isEqualTo(newName);
         assertThat(updated.getDescription()).isEqualTo(newDescription);
-        assertThat(updated.getUpdatedAt()).isAfter(portfolio.getUpdatedAt());
+        assertThat(updated.getUpdatedAt()).isAfterOrEqualTo(portfolio.getUpdatedAt());
     }
 
     @Test

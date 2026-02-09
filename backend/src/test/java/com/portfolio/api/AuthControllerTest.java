@@ -59,7 +59,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.user.displayName").value("Test User"))
                 .andExpect(jsonPath("$.data.tokens.accessToken").exists())
                 .andExpect(jsonPath("$.data.tokens.refreshToken").exists())
-                .andExpect(jsonPath("$.error").value(nullValue()));
+                .andExpect(jsonPath("$.error").doesNotExist());
     }
 
     @Test
@@ -111,7 +111,7 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.user.email").value("test@example.com"))
                 .andExpect(jsonPath("$.data.tokens.accessToken").exists())
                 .andExpect(jsonPath("$.data.tokens.refreshToken").exists())
-                .andExpect(jsonPath("$.error").value(nullValue()));
+                .andExpect(jsonPath("$.error").doesNotExist());
     }
 
     @Test

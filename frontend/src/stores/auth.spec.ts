@@ -1,9 +1,17 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { setActivePinia, createPinia } from 'pinia';
 import { useAuthStore } from './auth';
-import * as authApi from '@/api/auth';
+import { authApi } from '@/api';
 
-vi.mock('@/api/auth');
+vi.mock('@/api', () => ({
+  authApi: {
+    login: vi.fn(),
+    register: vi.fn(),
+    me: vi.fn(),
+    logout: vi.fn(),
+    refresh: vi.fn(),
+  },
+}));
 
 describe('Auth Store', () => {
   beforeEach(() => {
@@ -14,10 +22,8 @@ describe('Auth Store', () => {
 
   it('초기 상태 확인', () => {
     const store = useAuthStore();
-    
+
     expect(store.user).toBeNull();
-    expect(store.accessToken).toBeNull();
-    expect(store.refreshToken).toBeNull();
     expect(store.isAuthenticated).toBe(false);
     expect(store.loading).toBe(false);
   });
@@ -45,8 +51,6 @@ describe('Auth Store', () => {
     });
 
     expect(store.user).toEqual(mockResponse.user);
-    expect(store.accessToken).toBe('mock-access-token');
-    expect(store.refreshToken).toBe('mock-refresh-token');
     expect(store.isAuthenticated).toBe(true);
     expect(localStorage.setItem).toHaveBeenCalledWith('accessToken', 'mock-access-token');
     expect(localStorage.setItem).toHaveBeenCalledWith('refreshToken', 'mock-refresh-token');
@@ -81,7 +85,7 @@ describe('Auth Store', () => {
 
   it('로그아웃', () => {
     const store = useAuthStore();
-    
+
     // 로그인 상태 설정
     store.user = {
       id: '1',
@@ -89,14 +93,10 @@ describe('Auth Store', () => {
       displayName: 'Test User',
       locale: 'ko',
     };
-    store.accessToken = 'mock-access-token';
-    store.refreshToken = 'mock-refresh-token';
 
     store.logout();
 
     expect(store.user).toBeNull();
-    expect(store.accessToken).toBeNull();
-    expect(store.refreshToken).toBeNull();
     expect(store.isAuthenticated).toBe(false);
     expect(localStorage.removeItem).toHaveBeenCalledWith('accessToken');
     expect(localStorage.removeItem).toHaveBeenCalledWith('refreshToken');

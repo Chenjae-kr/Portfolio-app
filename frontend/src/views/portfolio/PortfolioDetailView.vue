@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue';
+import { onMounted, onUnmounted, computed, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { usePortfolioStore, useValuationStore } from '@/stores';
-import { formatCurrency, formatPercent, getChangeClass } from '@/utils/format';
+import { formatCurrency, formatPercent, formatDate, getChangeClass } from '@/utils/format';
 import PositionTable from '@/components/portfolio/PositionTable.vue';
 import TargetWeights from '@/components/portfolio/TargetWeights.vue';
 import TransactionList from '@/components/portfolio/TransactionList.vue';
@@ -16,6 +16,7 @@ const route = useRoute();
 const portfolioStore = usePortfolioStore();
 const valuationStore = useValuationStore();
 const { t } = useI18n();
+const REALTIME_INTERVAL_MS = 30000;
 
 const portfolioId = computed(() => route.params.id as string);
 const activeTab = ref('positions');
@@ -55,6 +56,12 @@ const cashWeight = computed(() => {
   if (!valuation.value) return 0;
   const { cashValueBase, totalValueBase } = valuation.value;
   return totalValueBase > 0 ? cashValueBase / totalValueBase : 0;
+});
+
+const realtimeStatusText = computed(() => {
+  const updatedAt = valuationStore.getLastUpdatedAt(portfolioId.value);
+  if (!updatedAt) return t('dashboard.realtimeInitializing');
+  return `${t('dashboard.realtimeUpdatedAt')} ${formatDate(updatedAt)}`;
 });
 
 // Edit modal state
@@ -103,6 +110,12 @@ onMounted(async () => {
     portfolioStore.fetchPortfolio(portfolioId.value),
     valuationStore.fetchValuation(portfolioId.value),
   ]);
+
+  valuationStore.startRealtimeUpdates([portfolioId.value], REALTIME_INTERVAL_MS);
+});
+
+onUnmounted(() => {
+  valuationStore.stopRealtimeUpdates();
 });
 </script>
 
@@ -174,6 +187,10 @@ onMounted(async () => {
 
       <!-- Summary Cards -->
       <section class="summary-section" v-if="valuation">
+        <div class="realtime-banner">
+          <span class="status-dot" :class="{ active: valuationStore.realtimeActive }"></span>
+          <span>{{ t('dashboard.realtimeStatus') }} · {{ realtimeStatusText }}</span>
+        </div>
         <div class="summary-cards">
           <div class="summary-card primary">
             <span class="label">{{ t('portfolio.totalValue') }}</span>
@@ -315,6 +332,27 @@ onMounted(async () => {
 
 .summary-section {
   margin-bottom: 32px;
+}
+
+.realtime-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9ca3af;
+}
+
+.status-dot.active {
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
 }
 
 .summary-cards {

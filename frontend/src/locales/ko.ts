@@ -64,6 +64,10 @@ export default {
     noRecentTransactions: '최근 거래가 없습니다',
     topPerformers: '수익률 상위',
     worstPerformers: '수익률 하위',
+    realtimeStatus: '실시간 가격 업데이트',
+    realtimeIdle: '대기 중',
+    realtimeInitializing: '초기화 중...',
+    realtimeUpdatedAt: '마지막 업데이트',
   },
   portfolio: {
     name: '포트폴리오 이름',

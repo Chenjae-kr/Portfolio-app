@@ -5,6 +5,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
@@ -51,7 +52,8 @@ public class MockPriceService implements PriceService {
 
     @Override
     public BigDecimal getCurrentPrice(String instrumentId) {
-        return BASE_PRICES.getOrDefault(instrumentId, DEFAULT_PRICE);
+        BigDecimal basePrice = BASE_PRICES.getOrDefault(instrumentId, DEFAULT_PRICE);
+        return applyIntradayFluctuation(instrumentId, basePrice);
     }
 
     @Override
@@ -136,5 +138,23 @@ public class MockPriceService implements PriceService {
 
         return basePrice.multiply(BigDecimal.valueOf(historicalMultiplier))
                 .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * 현재가에 짧은 주기의 변동을 부여해 실시간 업데이트 화면을 확인할 수 있도록 한다.
+     *
+     * - 30초 단위로 동일한 가격을 유지 (짧은 구간에서 결정론적)
+     * - 각 구간마다 -1.2% ~ +1.2% 범위에서 변동
+     */
+    private BigDecimal applyIntradayFluctuation(String instrumentId, BigDecimal basePrice) {
+        long slot = Instant.now().getEpochSecond() / 30;
+        int seed = Objects.hash(instrumentId, slot);
+        Random rng = new Random(seed);
+
+        double raw = rng.nextGaussian() * 0.004;
+        double bounded = Math.max(-0.012, Math.min(0.012, raw));
+        BigDecimal factor = BigDecimal.ONE.add(BigDecimal.valueOf(bounded));
+
+        return basePrice.multiply(factor).setScale(2, RoundingMode.HALF_UP);
     }
 }

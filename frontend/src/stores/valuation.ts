@@ -11,6 +11,11 @@ export const useValuationStore = defineStore('valuation', () => {
   const loading = ref(false);
   const performanceLoading = ref(false);
   const error = ref<string | null>(null);
+  const realtimeActive = ref(false);
+  const lastUpdatedAt = ref<Record<string, string>>({});
+  const realtimeIntervalMs = ref(30000);
+  const realtimeTimer = ref<number | null>(null);
+  const realtimePortfolioIds = ref<string[]>([]);
 
   async function fetchValuation(portfolioId: string, mode: ValuationMode = 'REALTIME') {
     loading.value = true;
@@ -18,6 +23,7 @@ export const useValuationStore = defineStore('valuation', () => {
     try {
       const valuation = await valuationApi.getValuation(portfolioId, mode);
       valuations.value[portfolioId] = valuation;
+      lastUpdatedAt.value[portfolioId] = new Date().toISOString();
       return valuation;
     } catch (e: unknown) {
       error.value = (e as Error).message || 'Failed to fetch valuation';
@@ -87,6 +93,52 @@ export const useValuationStore = defineStore('valuation', () => {
     compareResult.value = null;
   }
 
+  function setRealtimeTargets(portfolioIds: string[]) {
+    realtimePortfolioIds.value = [...new Set(portfolioIds)];
+  }
+
+  async function refreshRealtimeValuations() {
+    if (realtimePortfolioIds.value.length === 0) return;
+
+    await Promise.all(
+      realtimePortfolioIds.value.map(async (portfolioId) => {
+        try {
+          await fetchValuation(portfolioId);
+        } catch {
+          // Ignore per-portfolio realtime fetch failures
+        }
+      })
+    );
+  }
+
+  function startRealtimeUpdates(portfolioIds: string[], intervalMs = 30000) {
+    setRealtimeTargets(portfolioIds);
+    realtimeIntervalMs.value = intervalMs;
+
+    if (realtimeTimer.value) {
+      window.clearInterval(realtimeTimer.value);
+      realtimeTimer.value = null;
+    }
+
+    realtimeActive.value = true;
+    realtimeTimer.value = window.setInterval(() => {
+      void refreshRealtimeValuations();
+    }, intervalMs);
+  }
+
+  function stopRealtimeUpdates() {
+    if (realtimeTimer.value) {
+      window.clearInterval(realtimeTimer.value);
+      realtimeTimer.value = null;
+    }
+    realtimeActive.value = false;
+    realtimePortfolioIds.value = [];
+  }
+
+  function getLastUpdatedAt(portfolioId: string) {
+    return lastUpdatedAt.value[portfolioId] ?? null;
+  }
+
   return {
     valuations,
     performanceData,
@@ -95,6 +147,9 @@ export const useValuationStore = defineStore('valuation', () => {
     loading,
     performanceLoading,
     error,
+    realtimeActive,
+    realtimeIntervalMs,
+    lastUpdatedAt,
     fetchValuation,
     fetchPerformanceData,
     fetchPerformance,
@@ -103,5 +158,10 @@ export const useValuationStore = defineStore('valuation', () => {
     getPerformanceData,
     getPerformance,
     clearCompare,
+    startRealtimeUpdates,
+    stopRealtimeUpdates,
+    setRealtimeTargets,
+    refreshRealtimeValuations,
+    getLastUpdatedAt,
   };
 });

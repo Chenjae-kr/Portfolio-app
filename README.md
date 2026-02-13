@@ -154,7 +154,13 @@ Swagger UI: http://localhost:8080/api/swagger-ui.html
 
 ```bash
 export EXTERNAL_PRICING_ENABLED=true
+# 방법 1) 환경변수
 export ALPHA_VANTAGE_API_KEY=your_api_key
+
+# 방법 2) 로컬 파일 (gitignore 처리됨)
+cp backend/src/main/resources/api-keys.example.yml backend/src/main/resources/api-keys.yml
+# api-keys.yml 의 api.keys.alpha-vantage 값을 실제 키로 교체
+
 # 선택: 커스텀 엔드포인트
 # export ALPHA_VANTAGE_BASE_URL=https://www.alphavantage.co
 # export KRX_BASE_URL=http://data.krx.co.kr

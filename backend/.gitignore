@@ -55,3 +55,6 @@ logs/
 .env
 .env.*
 !.env.example
+
+# Private API key files
+src/main/resources/api-keys.yml

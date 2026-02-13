@@ -33,3 +33,6 @@ frontend/dist/
 .env
 .env.*
 !.env.example
+
+# Private API key files
+backend/src/main/resources/api-keys.yml

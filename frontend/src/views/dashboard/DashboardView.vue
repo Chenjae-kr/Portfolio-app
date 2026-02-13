@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, computed, ref } from 'vue';
+import { onMounted, onUnmounted, computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { usePortfolioStore, useValuationStore } from '@/stores';
 import { valuationApi, transactionApi } from '@/api';
@@ -12,6 +12,8 @@ const router = useRouter();
 const portfolioStore = usePortfolioStore();
 const valuationStore = useValuationStore();
 const { t } = useI18n();
+
+const REALTIME_INTERVAL_MS = 30000;
 
 const totalValue = computed(() => {
   return Object.values(valuationStore.valuations).reduce(
@@ -62,6 +64,18 @@ const worstPerformers = computed(() => {
   return sorted.slice(0, 3);
 });
 
+const realtimeStatusText = computed(() => {
+  if (portfolioStore.portfolios.length === 0) return t('dashboard.realtimeIdle');
+  const latest = portfolioStore.portfolios
+    .map((p) => valuationStore.getLastUpdatedAt(p.id))
+    .filter((v): v is string => Boolean(v))
+    .sort()
+    .pop();
+
+  if (!latest) return t('dashboard.realtimeInitializing');
+  return `${t('dashboard.realtimeUpdatedAt')} ${formatDate(latest)}`;
+});
+
 const typeLabels: Record<string, string> = {
   BUY: 'BUY', SELL: 'SELL', DEPOSIT: 'DEPOSIT', WITHDRAW: 'WITHDRAW',
   DIVIDEND: 'DIVIDEND', INTEREST: 'INTEREST', FEE: 'FEE', TAX: 'TAX',
@@ -91,6 +105,11 @@ onMounted(async () => {
       // Ignore errors for individual portfolios
     }
   }
+
+  valuationStore.startRealtimeUpdates(
+    portfolioStore.portfolios.map((portfolio) => portfolio.id),
+    REALTIME_INTERVAL_MS
+  );
 
   // Fetch rebalance data for all portfolios (parallel, non-blocking)
   rebalanceLoading.value = true;
@@ -124,6 +143,10 @@ onMounted(async () => {
   }).finally(() => { transactionsLoading.value = false; });
 });
 
+onUnmounted(() => {
+  valuationStore.stopRealtimeUpdates();
+});
+
 function navigateToPortfolio(id: string) {
   router.push(`/portfolio/${id}`);
 }
@@ -133,6 +156,10 @@ function navigateToPortfolio(id: string) {
   <div class="dashboard">
     <!-- Summary Section -->
     <section class="summary-section">
+      <div class="realtime-banner" v-if="portfolioStore.portfolios.length > 0">
+        <span class="status-dot" :class="{ active: valuationStore.realtimeActive }"></span>
+        <span>{{ t('dashboard.realtimeStatus') }} · {{ realtimeStatusText }}</span>
+      </div>
       <div class="summary-cards">
         <div class="summary-card">
           <span class="summary-label">{{ t('dashboard.totalAssets') }}</span>
@@ -308,6 +335,27 @@ function navigateToPortfolio(id: string) {
 
 .summary-section {
   margin-bottom: 32px;
+}
+
+.realtime-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9ca3af;
+}
+
+.status-dot.active {
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.15);
 }
 
 .summary-cards {

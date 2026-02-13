@@ -64,6 +64,10 @@ export default {
     noRecentTransactions: 'No recent transactions',
     topPerformers: 'Top Performers',
     worstPerformers: 'Worst Performers',
+    realtimeStatus: 'Real-time Price Updates',
+    realtimeIdle: 'Idle',
+    realtimeInitializing: 'Initializing...',
+    realtimeUpdatedAt: 'Last updated',
   },
   portfolio: {
     name: 'Portfolio Name',

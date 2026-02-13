@@ -2,6 +2,9 @@ spring:
   application:
     name: portfolio-api
 
+  config:
+    import: optional:classpath:api-keys.yml
+
   profiles:
     active: local
 
@@ -87,6 +90,14 @@ app:
   pricing:
     poll-interval: 15000  # milliseconds
     retry-max-attempts: 3
+    external:
+      enabled: ${EXTERNAL_PRICING_ENABLED:false}
+      timeout-ms: ${EXTERNAL_PRICING_TIMEOUT_MS:3000}
+      alpha-vantage:
+        api-key: ${ALPHA_VANTAGE_API_KEY:${api.keys.alpha-vantage:}}
+        base-url: ${ALPHA_VANTAGE_BASE_URL:https://www.alphavantage.co}
+      krx:
+        base-url: ${KRX_BASE_URL:http://data.krx.co.kr}
 
   backtest:
     queue-name: backtest-jobs

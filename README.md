@@ -148,6 +148,29 @@ cd backend
 백엔드 서버: http://localhost:8080/api
 Swagger UI: http://localhost:8080/api/swagger-ui.html
 
+### 외부 시세 API 연동 (Alpha Vantage / KRX)
+
+백엔드는 기본적으로 Mock 시세를 사용하며, 아래 환경변수를 설정하면 외부 API 연동을 활성화할 수 있습니다.
+
+```bash
+export EXTERNAL_PRICING_ENABLED=true
+# 방법 1) 환경변수
+export ALPHA_VANTAGE_API_KEY=your_api_key
+
+# 방법 2) 로컬 파일 (gitignore 처리됨)
+cp backend/src/main/resources/api-keys.example.yml backend/src/main/resources/api-keys.yml
+# api-keys.yml 의 api.keys.alpha-vantage 값을 실제 키로 교체
+
+# 선택: 커스텀 엔드포인트
+# export ALPHA_VANTAGE_BASE_URL=https://www.alphavantage.co
+# export KRX_BASE_URL=http://data.krx.co.kr
+```
+
+- 해외/환율: Alpha Vantage
+- 국내(한국 종목): KRX 정보데이터시스템
+- 외부 API 실패 시 Mock 가격으로 자동 폴백
+
+
 #### 4. 프론트엔드 실행
 
 ```bash

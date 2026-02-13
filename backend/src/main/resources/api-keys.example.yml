@@ -1,0 +1,5 @@
+# Copy this file to `api-keys.yml` and fill your private keys.
+# `api-keys.yml` is gitignored.
+api:
+  keys:
+    alpha-vantage: your_alpha_vantage_api_key
